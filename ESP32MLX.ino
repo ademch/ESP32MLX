@@ -1,6 +1,10 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 
+#include <Wire.h>
+#include "MLX90640_API.h"
+#include "MLX90640_I2C_Driver.h"
+
 // Select camera model in board_config.h
 #include "board_config.h"
 
@@ -16,16 +20,46 @@ const char *ap_password = "12345678";
 void startCameraControlAndStreamServers();
 void setupLedFlash();
 
+//============================= MLX90640==============================================
+paramsMLX90640 mlx90640;
+const uint8_t MLX90640_address = 0x33;  // Default 7-bit unshifted address of the MLX90640
+static float tempValues[32 * 24];		// 32 coloumns x 24 rows
+
 void setup() {
   
   delay(2000);
 
+  // Start UART
   Serial.begin(115200);
   
   // Enable diagnostic output for WiFi libraries
   Serial.setDebugOutput(true);
 
-  Serial.print("Camera init...");
+  Serial.print("MLX90640 thermal camera init...");
+  
+	  // Initialize I2C with custom pins and frequency (default 100kHz)
+	  Wire.begin(14, 15, 100000);  // SDA, SCL, frequency in Hz
+
+	  Wire.beginTransmission(MLX90640_address);
+	  if (Wire.endTransmission() != 0) {
+		  Serial.print("MLX90640 not detected at address ");
+		  Serial.println(MLX90640_address);
+		  return;
+	  }
+
+	  uint16_t eeMLX90640[MLX90640_eeSIZE];
+	  int status = MLX90640_DumpEE(MLX90640_address, eeMLX90640);
+	  if (status != 0) Serial.println("Failed to load system parameters");
+
+	  status = MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
+	  if (status != 0) Serial.println("Parameters extraction failed");
+
+	  MLX90640_SetRefreshRate(MLX90640_address, MLX90640_REFRESH_RATE_4HZ);
+
+  Serial.print("success");
+
+
+  Serial.print("OV2640 camera init...");
 
 	camera_config_t config;
   

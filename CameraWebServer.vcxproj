@@ -104,22 +104,24 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectDir)..\..\..\AppData\Local\arduino15\packages\esp32\hardware\esp32\3.3.0\cores\;$(ProjectDir)..\..\..\AppData\Local\arduino15\packages\esp32\hardware\esp32\3.3.0\cores\esp32;$(ProjectDir)..\..\..\AppData\Local\arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\WiFi\src;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\WiFi\src;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_driver_ledc\include\driver;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\hal\include\hal;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\soc\esp32\include\soc;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\qio_qspi\include;$(ProjectDir)..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include;$(ProjectDir)..\..\..\..\..\\Users\\selga\\AppData\\Local\\arduino15\\packages\\esp32\\tools\\esp32-arduino-libs\\idf-release_v5.5-b66b5448-v1\\{build.mcu}\qio_qspi\include;$(ProjectDir)..\..\..\..\..\\Users\\selga\\AppData\\Local\\arduino15\\packages\\esp32\\hardware\\esp32\\3.3.0\\tools\\sdk\\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <ForcedIncludeFiles>$(ProjectDir)__vm\.CameraWebServer.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
+      <ForcedIncludeFiles>$(ProjectDir)__vm\.ESP32MLX.vsarduino.h;%(ForcedIncludeFiles)</ForcedIncludeFiles>
       <PreprocessorDefinitions>_VMICRO_INTELLISENSE;__2411___;F_CPU={build.f_cpu};ARDUINO=108018;ARDUINO_ESP32_FAMILY;ARDUINO_ARCH_ESP32;ARDUINO_BOARD=ESP32_FAMILY;ARDUINO_VARIANT={build.variant};ARDUINO_HOST_OS=windows;ARDUINO_FQBN={build.fqbn};ESP32=ESP32;CORE_DEBUG_LEVEL=0;__cplusplus=201103L;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.cpp" />
     <ClCompile Include="app_httpd.cpp" />
     <ClCompile Include="esp32-camera-master\driver\cam_hal.c" />
     <ClCompile Include="esp32-camera-master\driver\esp_camera.c" />
     <ClCompile Include="esp32-camera-master\driver\sensor.c" />
     <ClCompile Include="esp32-camera-master\sensors\ov2640.c" />
     <ClCompile Include="esp32-camera-master\target\esp32\ll_cam.c" />
-    <ClCompile Include="MLX90640\MLX90640_API.cpp" />
-    <ClCompile Include="MLX90640\MLX90640_I2C_Driver.cpp" />
+    <ClCompile Include="MLX90640_API.cpp" />
+    <ClCompile Include="MLX90640_I2C_Driver.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\WiFi\src\WiFi.h" />
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\sensor.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h" />
@@ -131,17 +133,13 @@
     <ClInclude Include="board_config.h" />
     <ClInclude Include="camera_index.h" />
     <ClInclude Include="camera_pins.h" />
-    <ClInclude Include="MLX90640\MLX90640_API.h" />
-    <ClInclude Include="MLX90640\MLX90640_I2C_Driver.h" />
+    <ClInclude Include="MLX90640_API.h" />
+    <ClInclude Include="MLX90640_I2C_Driver.h" />
     <ClInclude Include="__vm\.CameraWebServer.vsarduino.h" />
+    <ClInclude Include="__vm\.ESP32MLX.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CameraWebServer.ino">
-      <FileType>CppCode</FileType>
-      <DeploymentContent>true</DeploymentContent>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="ESP32MLX.ino" />
     <None Include="index_ov2640.html" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

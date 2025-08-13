@@ -19,31 +19,39 @@
     <Filter Include="Header Files\MLX">
       <UniqueIdentifier>{26f1ca74-e7b0-4a34-ab7c-7e0487fc4620}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\External\CAMERA">
+      <UniqueIdentifier>{0132451f-0ec0-475e-b51d-4557e0d33cec}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\External\Wire">
+      <UniqueIdentifier>{4ade1e1f-7e03-41e7-86d7-a9732a4eadcc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app_httpd.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CameraWebServer.ino" />
-    <ClCompile Include="esp32-camera-master\driver\esp_camera.c">
-      <Filter>Header Files\External</Filter>
-    </ClCompile>
     <ClCompile Include="esp32-camera-master\driver\cam_hal.c">
-      <Filter>Header Files\External</Filter>
+      <Filter>Header Files\External\CAMERA</Filter>
     </ClCompile>
-    <ClCompile Include="esp32-camera-master\driver\sensor.c">
-      <Filter>Header Files\External</Filter>
-    </ClCompile>
-    <ClCompile Include="esp32-camera-master\sensors\ov2640.c">
-      <Filter>Header Files\External</Filter>
+    <ClCompile Include="esp32-camera-master\driver\esp_camera.c">
+      <Filter>Header Files\External\CAMERA</Filter>
     </ClCompile>
     <ClCompile Include="esp32-camera-master\target\esp32\ll_cam.c">
-      <Filter>Header Files\External</Filter>
+      <Filter>Header Files\External\CAMERA</Filter>
     </ClCompile>
-    <ClCompile Include="MLX90640\MLX90640_API.cpp">
+    <ClCompile Include="esp32-camera-master\sensors\ov2640.c">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClCompile>
+    <ClCompile Include="esp32-camera-master\driver\sensor.c">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.cpp">
+      <Filter>Header Files\External\Wire</Filter>
+    </ClCompile>
+    <ClCompile Include="MLX90640_API.cpp">
       <Filter>Header Files\MLX</Filter>
     </ClCompile>
-    <ClCompile Include="MLX90640\MLX90640_I2C_Driver.cpp">
+    <ClCompile Include="MLX90640_I2C_Driver.cpp">
       <Filter>Header Files\MLX</Filter>
     </ClCompile>
   </ItemGroup>
@@ -60,12 +68,6 @@
     <ClInclude Include="__vm\.CameraWebServer.vsarduino.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h">
-      <Filter>Header Files\External</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\sensor.h">
-      <Filter>Header Files\External</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\qio_qspi\include\sdkconfig.h">
       <Filter>Header Files\External</Filter>
     </ClInclude>
@@ -75,27 +77,42 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_driver_ledc\include\driver\ledc.h">
       <Filter>Header Files\External</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include\esp_http_server.h">
-      <Filter>Header Files\External</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
-      <Filter>Header Files\External</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\hal\include\hal\ledc_types.h">
       <Filter>Header Files\External</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\WiFi\src\WiFi.h">
       <Filter>Header Files\External</Filter>
     </ClInclude>
-    <ClInclude Include="MLX90640\MLX90640_API.h">
+    <ClInclude Include="__vm\.ESP32MLX.vsarduino.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include\esp_http_server.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\sensor.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.h">
+      <Filter>Header Files\External\Wire</Filter>
+    </ClInclude>
+    <ClInclude Include="MLX90640_API.h">
       <Filter>Header Files\MLX</Filter>
     </ClInclude>
-    <ClInclude Include="MLX90640\MLX90640_I2C_Driver.h">
+    <ClInclude Include="MLX90640_I2C_Driver.h">
       <Filter>Header Files\MLX</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="index_ov2640.html">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="ESP32MLX.ino">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
