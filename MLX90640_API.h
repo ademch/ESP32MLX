@@ -17,7 +17,9 @@
 #ifndef _MLX640_API_H_
 #define _MLX640_API_H_
 
-	#define MLX90640_eeSIZE 832
+	#define MLX90640_eepromSIZE         832
+	#define MLX90640_ramSIZEframe       832	// ram bytes (768 frame + 64 params tag)
+	#define MLX90640_ramSIZEuser        834	// contains two additional bytes
 
 	#define MLX90640_REFRESH_RATE_05HZ	0
 	#define MLX90640_REFRESH_RATE_1HZ	1
@@ -38,6 +40,9 @@
 	#define MLX90640_RAM_AUX_CTRL_REG1	832
 	#define MLX90640_RAM_AUX_SUBPAGE	833
 
+	// addresses
+	#define MLX90640_I2C_RAM			0x0400
+	#define MLX90640_I2C_EEPROM			0x2400
 	#define MLX90640_I2C_STATUS_REG		0x8000
 	#define MLX90640_I2C_CTRL_REG1		0x800D
 

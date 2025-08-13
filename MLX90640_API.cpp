@@ -38,7 +38,7 @@ int  CheckEEPROMvalid(uint16_t *eeData);
   
 int MLX90640_DumpEE(uint8_t slaveAddr, uint16_t *eeData)
 {
-     return MLX90640_I2CRead(slaveAddr, 0x2400, MLX90640_eeSIZE, eeData);
+     return MLX90640_I2CRead(slaveAddr, MLX90640_I2C_EEPROM, MLX90640_eepromSIZE, eeData);
 }
 
 int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
@@ -46,41 +46,42 @@ int MLX90640_GetFrameData(uint8_t slaveAddr, uint16_t *frameData)
     uint16_t controlRegister1;
     uint16_t statusRegister;
     int error = 1;
-    
+
 	uint16_t dataReady = 0;
-    while (dataReady == 0)
+    while (dataReady == 0)	// Wait for data ready flag
     {
         error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
         if (error != 0) return error;
  
-        dataReady = statusRegister & 0x0008;
+        dataReady = statusRegister & 0x0008;	// B3 New data available in ram
     }       
         
 	uint8_t cnt = 0;
-	while (dataReady != 0 && cnt < 5)
+	while ((dataReady != 0) && (cnt < 5))
     { 
         error = MLX90640_I2CWrite(slaveAddr, MLX90640_I2C_STATUS_REG, 0x0030);
         if (error == -1) return error;
 
-        error = MLX90640_I2CRead(slaveAddr, 0x0400, 832, frameData); 
+        error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
         if (error != 0) return error;
       
         error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
-        if (error != 0)  return error;
+        if (error != 0) return error;
 
-        dataReady = statusRegister & 0x0008;
-        cnt = cnt + 1;
+        dataReady = statusRegister & 0x0008;	// B3 New data available in ram
+
+		cnt++;
     }
     
     if (cnt > 4) return -8;
    
     error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    frameData[MLX90640_RAM_AUX_CTRL_REG1] = controlRegister1;
-    frameData[MLX90640_RAM_AUX_SUBPAGE]   = statusRegister & 0x0001;
-    
     if (error != 0)  return error;
 
-    return frameData[MLX90640_RAM_AUX_SUBPAGE];
+	frameData[MLX90640_RAM_AUX_CTRL_REG1] = controlRegister1;
+	frameData[MLX90640_RAM_AUX_SUBPAGE]   = statusRegister & 0x0001;
+	
+	return frameData[MLX90640_RAM_AUX_SUBPAGE];
 }
 
 int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
@@ -116,9 +117,9 @@ int MLX90640_SetResolution(uint8_t slaveAddr, uint8_t resolution)
     
 	uint16_t controlRegister1;
 	int error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    
     if (error == 0)
     {
+		// no error
         value = (controlRegister1 & 0xF3FF) | value;
         error = MLX90640_I2CWrite(slaveAddr, MLX90640_I2C_CTRL_REG1, value);
     }    
@@ -179,7 +180,6 @@ int MLX90640_SetInterleavedMode(uint8_t slaveAddr)
     int value;
     
     int error = MLX90640_I2CRead(slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    
     if (error == 0)
 	{
 		// no error
@@ -230,22 +230,13 @@ int MLX90640_GetCurMode(uint8_t slaveAddr)
 // params - structure holding all calibration constants from MLX90640_ExtractParameters()
 // emissivity - target surface emissivity (0-1)
 // tr - reflected apparent temperature (Celsius), usually the ambient temperature
-// result - output array of 768 floats (32x24 pixels), each in Celsius
+// afResult - output array of 768 floats (32x24 pixels), each in Celsius
 void MLX90640_CalculateTo(uint16_t *frameData,
 	                      const paramsMLX90640 *params,
 	                      float emissivity,
 	                      float tr,
-	                      float *result)
+	                      float *afResult)
 {
-    float irData;
-    float alphaCompensated;
-    int8_t ilPattern;
-    int8_t chessPattern;
-    int8_t pattern;
-    int8_t conversionPattern;
-    float Sx;
-    int8_t range;
-    
 	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
 	float       vdd  = MLX90640_GetVdd(frameData, params);
     float       ta   = MLX90640_GetTa(frameData, params);
@@ -265,6 +256,7 @@ void MLX90640_CalculateTo(uint16_t *frameData,
     gain = params->gainEE / gain; 
   
 //------------------------- To calculation -------------------------------------    
+	// 0x80 chess pattern or 0x00 interleaved
 	uint8_t mode = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
     
 	float irDataCP[2];
@@ -273,61 +265,67 @@ void MLX90640_CalculateTo(uint16_t *frameData,
     
 	for (int i = 0; i < 2; i++)
     {
+		// observe sign
         if (irDataCP[i] > 32767) irDataCP[i] = irDataCP[i] - 65536;
 
         irDataCP[i] = irDataCP[i] * gain;
     }
     
 	irDataCP[0] = irDataCP[0] - params->cpOffset[0] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
-    if (mode ==  params->calibrationModeEE)
+    
+	if (mode ==  params->calibrationModeEE)
         irDataCP[1] = irDataCP[1] - params->cpOffset[1] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
     else
         irDataCP[1] = irDataCP[1] - (params->cpOffset[1] + params->ilChessC[0]) * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
 
     for (int pixelNumber = 0; pixelNumber < 768; pixelNumber++)
     {
-        ilPattern = pixelNumber / 32 - (pixelNumber / 64) * 2; 
-        chessPattern = ilPattern ^ (pixelNumber - (pixelNumber/2)*2); 
-        conversionPattern = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * ilPattern);
+		int8_t intvdPattern = pixelNumber / 32 - (pixelNumber / 64) * 2;
+		int8_t chessPattern = intvdPattern ^ (pixelNumber - (pixelNumber/2)*2);
+		int8_t convPattern  = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * intvdPattern);
         
-        if (mode == 0)
-            pattern = ilPattern; 
+		int8_t pattern;
+		if (mode == 0)
+            pattern = intvdPattern; 
         else 
             pattern = chessPattern;          
         
-        if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE]) {
-            irData = frameData[pixelNumber];
+        if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
+		{
+			float irData;
+
+			irData = frameData[pixelNumber];
             if (irData > 32767) irData = irData - 65536;
 
             irData = irData * gain;
             
             irData = irData - params->offset[pixelNumber]*(1 + params->kta[pixelNumber]*(ta - 25))*(1 + params->kv[pixelNumber]*(vdd - 3.3));
             
-			if(mode !=  params->calibrationModeEE)
-                irData = irData + params->ilChessC[2] * (2 * ilPattern - 1) - params->ilChessC[1] * conversionPattern; 
+			if (mode !=  params->calibrationModeEE)
+                irData = irData + params->ilChessC[2] * (2 * intvdPattern - 1) - params->ilChessC[1] * convPattern; 
             
             irData = irData / emissivity;
             irData = irData - params->tgc * irDataCP[subPage];
             
-            alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
+			float alphaCompensated;
+
+			alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
             
-            Sx = pow((double)alphaCompensated, (double)3) * (irData + alphaCompensated * taTr);
+			float Sx;
+			Sx = pow((double)alphaCompensated, (double)3) * (irData + alphaCompensated * taTr);
             Sx = sqrt(sqrt(Sx)) * params->ksTo[1];
             
-            float To = sqrt(sqrt(irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr)) - 273.15;
+            float fTo = sqrt(sqrt(irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr)) - 273.15;
                     
-            if (To < params->ct[1])
-                range = 0;
-            else if (To < params->ct[2])   
-                range = 1;            
-            else if (To < params->ct[3])
-                range = 2;            
-            else
-                range = 3;            
+			int8_t range;
+			if      (fTo < params->ct[1]) range = 0;
+			else if (fTo < params->ct[2]) range = 1;
+            else if (fTo < params->ct[3]) range = 2;
+            else                          range = 3;
             
-            To = sqrt(sqrt(irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (To - params->ct[range]))) + taTr)) - 273.15;
+            fTo = sqrt(sqrt(irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (fTo - params->ct[range]))) + taTr)) - 273.15;
             
-            result[pixelNumber] = To;
+            afResult[pixelNumber] = fTo;
         }
     }
 }
@@ -335,16 +333,8 @@ void MLX90640_CalculateTo(uint16_t *frameData,
 //------------------------------------------------------------------------------
 // Gives raw signal levels without converting to absolute temperatures
 // Output is good for visualization (grayscale) but not for precise thermometry
-void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result)
+void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *afResult)
 {
-    float irDataCP[2];
-    float irData;
-    float alphaCompensated;
-    int8_t ilPattern;
-    int8_t chessPattern;
-    int8_t pattern;
-    int8_t conversionPattern;
-    
 	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
     float        vdd = MLX90640_GetVdd(frameData, params);
     float        ta  = MLX90640_GetTa(frameData, params);
@@ -355,9 +345,11 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
     gain = params->gainEE / gain; 
   
 //------------------------- Image calculation -------------------------------------    
+	// 0x80 chess pattern or 0x00 interleaved
 	uint8_t mode = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
     
-    irDataCP[0] = frameData[MLX90640_RAM_CP0];
+	float irDataCP[2];
+	irDataCP[0] = frameData[MLX90640_RAM_CP0];
     irDataCP[1] = frameData[MLX90640_RAM_CP1];
 
     for (int i = 0; i < 2; i++)
@@ -375,32 +367,34 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 
     for (int pixelNumber = 0; pixelNumber < 768; pixelNumber++)
     {
-        ilPattern = pixelNumber / 32 - (pixelNumber / 64) * 2; 
-        chessPattern = ilPattern ^ (pixelNumber - (pixelNumber/2)*2); 
-        conversionPattern = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * ilPattern);
+		int8_t intvdPattern = pixelNumber / 32 - (pixelNumber / 64) * 2;
+		int8_t chessPattern = intvdPattern ^ (pixelNumber - (pixelNumber/2)*2);
+		int8_t convPattern  = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * intvdPattern);
         
-        if (mode == 0)
-            pattern = ilPattern; 
-        else 
+		int8_t pattern;
+		if (mode == 0)	// interleaved
+            pattern = intvdPattern; 
+        else			// chess
             pattern = chessPattern; 
         
         if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
-        {    
+        {   
+			float irData;
+
             irData = frameData[pixelNumber];
             if (irData > 32767) irData = irData - 65536;
             irData = irData * gain;
             
             irData = irData - params->offset[pixelNumber]*(1 + params->kta[pixelNumber]*(ta - 25))*(1 + params->kv[pixelNumber]*(vdd - 3.3));
             if (mode !=  params->calibrationModeEE)
-                irData = irData + params->ilChessC[2] * (2 * ilPattern - 1) - params->ilChessC[1] * conversionPattern; 
+                irData = irData + params->ilChessC[2] * (2 * intvdPattern - 1) - params->ilChessC[1] * convPattern; 
             
             irData = irData - params->tgc * irDataCP[subPage];
             
+			float alphaCompensated;
             alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
             
-            float image = irData/alphaCompensated;
-            
-            result[pixelNumber] = image;
+            afResult[pixelNumber] = irData / alphaCompensated;
         }
     }
 }
@@ -829,6 +823,9 @@ void ExtractCILCParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     calibrationModeEE = (eeData[10] & 0x0800) >> 4;
     calibrationModeEE = calibrationModeEE ^ 0x80;
 
+	// either 0x80 or 0x00
+	mlx90640->calibrationModeEE = calibrationModeEE;
+
 	float ilChessC[3];
 	
 	ilChessC[0] = (eeData[53] & 0x003F);
@@ -843,7 +840,6 @@ void ExtractCILCParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     if (ilChessC[2] > 15) ilChessC[2] = ilChessC[2] - 32;
     ilChessC[2] = ilChessC[2] / 8.0f;
     
-    mlx90640->calibrationModeEE = calibrationModeEE;
     mlx90640->ilChessC[0] = ilChessC[0];
     mlx90640->ilChessC[1] = ilChessC[1];
     mlx90640->ilChessC[2] = ilChessC[2];
