@@ -220,9 +220,9 @@ int MLX90640_GetCurADCresolution()
     int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
 
-    int resolutionRAM = (controlRegister1 & 0x0C00) >> 10;
+    int resolution = (controlRegister1 & 0x0C00) >> 10;
     
-    return resolutionRAM; 
+    return resolution; 
 }
 
 //------------------------------------------------------------------------------
@@ -428,7 +428,7 @@ void MLX90640_CalculateTo(uint16_t *frameData,
 			Sx = pow((double)alphaCompensated, (double)3) * (irData + alphaCompensated * taTr);
             Sx = sqrt(sqrt(Sx)) * params->ksTo[1];
             
-            float fTo = sqrt(sqrt(irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr)) - 273.15;
+            float fTo = sqrt(sqrt( irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr )) - 273.15;
                     
 			int8_t range;
 			if      (fTo < params->ct[1]) range = 0;
@@ -436,7 +436,7 @@ void MLX90640_CalculateTo(uint16_t *frameData,
             else if (fTo < params->ct[3]) range = 2;
             else                          range = 3;
             
-            fTo = sqrt(sqrt(irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (fTo - params->ct[range]))) + taTr)) - 273.15;
+            fTo = sqrt(sqrt( irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (fTo - params->ct[range]))) + taTr)) - 273.15;
             
             afResult[pixelNumber] = fTo;
         }
@@ -459,35 +459,38 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
   
 //------------------------- Image calculation -------------------------------------    
 	// 0x80 chess pattern or 0x00 interleaved
-	uint8_t mode = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
+	uint8_t modeFrame = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
     
 	float irDataCP[2];
-	irDataCP[0] = frameData[MLX90640_RAM_CP0];
-    irDataCP[1] = frameData[MLX90640_RAM_CP1];
+	irDataCP[0] = frameData[MLX90640_RAM_CP0];	// subpage0
+    irDataCP[1] = frameData[MLX90640_RAM_CP1];	// subpage1
 
     for (int i = 0; i < 2; i++)
     {
         if (irDataCP[i] > 32767) irDataCP[i] = irDataCP[i] - 65536;
 
-        irDataCP[i] = irDataCP[i] * gain;
+        // 11.2.2.6.1
+		irDataCP[i] = irDataCP[i] * gain;
     }
-    irDataCP[0] = irDataCP[0] - params->cpOffset[0] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
-    
-	if (mode ==  params->calibrationModeEE)
+
+	// 11.2.2.6.2 Compensating offset, Ta, Vdd of CP pixel
+	irDataCP[0] = irDataCP[0] - params->cpOffset[0] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
+	if (modeFrame ==  params->calibrationModeEE)	// chess
         irDataCP[1] = irDataCP[1] - params->cpOffset[1] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
-    else
+    else                                            // interleaved
         irDataCP[1] = irDataCP[1] - (params->cpOffset[1] + params->ilChessC[0]) * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
 
     for (int pixelNumber = 0; pixelNumber < MLX90640_pixelCOUNT; pixelNumber++)
     {
+		// 11.2.2.7
 		int8_t intlvdPattern = pixelNumber / 32 - (pixelNumber / 64) * 2;
 		int8_t chessPattern  = intlvdPattern ^ (pixelNumber - (pixelNumber/2)*2);
 		int8_t convPattern   = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * intlvdPattern);
         
 		int8_t pattern;
-		if (mode == 0)	// interleaved
+		if (modeFrame == 0)	// interleaved
             pattern = intlvdPattern; 
-        else			// chess
+        else				// chess
             pattern = chessPattern; 
         
         if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
@@ -497,14 +500,19 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
             irData = frameData[pixelNumber];
             if (irData > 32767) irData = irData - 65536;
             
+			// 11.2.2.5.1
 			irData = irData * gain;
+			// 11.2.2.5.3
             irData = irData - params->offset[pixelNumber]*(1 + params->kta[pixelNumber]*(ta - 25))*(1 + params->kv[pixelNumber]*(vdd - 3.3));
             
-			if (mode !=  params->calibrationModeEE)
+			// 11.1.3.1
+			if (modeFrame !=  params->calibrationModeEE)
                 irData = irData + params->ilChessC[2] * (2 * intlvdPattern - 1) - params->ilChessC[1] * convPattern; 
             
+			// 11.2.2.7
             irData = irData - params->tgc * irDataCP[subPage];
             
+			// 11.2.2.8
 			float alphaCompensated;
             alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
             
@@ -521,30 +529,33 @@ float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
     if (vdd > 32767) vdd = vdd - 65536;
 
     int resolutionRAM = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x0C00) >> 10;
-    float resolutionCorrection = pow(2, (double)params->resolutionEE) / pow(2, (double)resolutionRAM);
-    vdd = (resolutionCorrection * vdd - params->vdd25) / params->kVdd + 3.3;
+    
+	float resolutionCor = pow(2, (double)params->resolutionEE) /
+		                  pow(2, (double)resolutionRAM);
+    
+	vdd = (resolutionCor * vdd - params->vdd25) / params->kVdd + 3.3;
     
     return vdd;
 }
 
 //------------------------------------------------------------------------------
-
+// Ambient temperature
 float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = MLX90640_GetVdd(frameData, params);
     
-	float ptat = frameData[MLX90640_RAM_PTAT];
-    if (ptat > 32767) ptat = ptat - 65536;
+	float Vptat = frameData[MLX90640_RAM_PTAT];
+    if (Vptat > 32767) Vptat = Vptat - 65536;
     
-    float ptatArt = frameData[MLX90640_RAM_VBE];
-    if (ptatArt > 32767) ptatArt = ptatArt - 65536;
+    float Vbe = frameData[MLX90640_RAM_VBE];
+    if (Vbe > 32767) Vbe = Vbe - 65536;
 
-    ptatArt = (ptat / (ptat * params->alphaPTAT + ptatArt)) * pow(2, (double)18);
+    float VptatArt = (Vptat / (Vptat * params->alphaPTAT + Vbe)) * pow(2, (double)18);
     
-    float ta  = (ptatArt / (1 + params->KvPTAT * (vdd - 3.3)) - params->vPTAT25);
-          ta /= params->KtPTAT + 25;
+    float Ta = (VptatArt / (1 + params->KvPTAT * (vdd - 3.3)) - params->vPTAT25);
+          Ta = Ta / params->KtPTAT + 25;
     
-    return ta;
+    return Ta;
 }
 
 //------------------------------------------------------------------------------
