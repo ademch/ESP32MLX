@@ -20,6 +20,7 @@
 #include "sdkconfig.h"
 #include "camera_index.h"
 #include "board_config.h"
+#include "MLX90640_API.h"
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 	#include "esp32-hal-log.h"
@@ -257,104 +258,104 @@ static esp_err_t capture_handler(httpd_req_t *req)
 // Input: req- valid request
 static esp_err_t stream2640_handler(httpd_req_t *req)
 {
-  struct timeval _timestamp;
-  size_t _jpg_buf_len = 0;
-  uint8_t *_jpg_buf = NULL;
+    struct timeval _timestamp;
+    size_t _jpg_buf_len = 0;
+    uint8_t *_jpg_buf = NULL;
 
-  #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-    static int64_t last_frame = 0;
-	if (!last_frame) last_frame = esp_timer_get_time();
-  #endif
+    #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+        static int64_t last_frame = 0;
+	    if (!last_frame) last_frame = esp_timer_get_time();
+    #endif
 
-  esp_err_t res = ESP_OK;
-  res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
-  if (res != ESP_OK) return res;
+    esp_err_t res;
+    res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
+    if (res != ESP_OK) return res;
 
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-  httpd_resp_set_hdr(req, "X-Framerate", "60");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "X-Framerate", "60");
 
-  #if defined(LED_GPIO_NUM)
-    isStreaming = true;
-    enable_led(true);
-  #endif
+    #if defined(LED_GPIO_NUM)
+        isStreaming = true;
+        enable_led(true);
+    #endif
 
-  camera_fb_t *fb = NULL;
-  while (true)
-  {
-      fb = esp_camera_fb_get();
-      if (!fb) {
-          log_e("Camera capture failed");
-          res = ESP_FAIL;
-	      break;
-      }
-
-      _timestamp.tv_sec  = fb->timestamp.tv_sec;
-      _timestamp.tv_usec = fb->timestamp.tv_usec;
-
-      if (fb->format != PIXFORMAT_JPEG)
-	  {
-          bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-
-          esp_camera_fb_return(fb);
-          fb = NULL;
-
-          if (!jpeg_converted)
-		  {
-              log_e("JPEG compression failed");
-              res = ESP_FAIL;
-          }
-      }
-	  else {
-		  _jpg_buf = fb->buf;
-		  _jpg_buf_len = fb->len;
-      }
-
-      if (res == ESP_OK)
-          res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
-
-      if (res == ESP_OK)
-	  {
-		  char *part_buf[128];
-
-		  size_t hlen = snprintf((char *)part_buf, 128, _STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
-		  res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
-      }
-
-      if (res == ESP_OK)
-          res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
-
-      if (fb)
-	  {
-		  esp_camera_fb_return(fb);
-		  fb = NULL;
-		  _jpg_buf = NULL;
-      }
-	  else if (_jpg_buf)
-	  {
-		  free(_jpg_buf);
-		  _jpg_buf = NULL;
-      }
-
-      if (res != ESP_OK) {
-          log_e("Send frame failed");
-          break;
-      }
-
-	#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-		int64_t fr_end = esp_timer_get_time();
-		int64_t frame_time = (fr_end - last_frame) / 1000;
-		last_frame = fr_end;
-
-        uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
-
-		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(_jpg_buf_len) >> 10,
-															   (uint32_t)frame_time,
-															   1000.0 / (uint32_t)frame_time,
-															   avg_frame_time,
-															   1000.0 / avg_frame_time
-		);
-	#endif
-  }
+    camera_fb_t* fb = NULL;
+    while (true)
+    {
+        fb = esp_camera_fb_get();
+        if (!fb) {
+            log_e("Camera capture failed");
+            res = ESP_FAIL;
+	        break;
+        }
+    
+        _timestamp.tv_sec  = fb->timestamp.tv_sec;
+        _timestamp.tv_usec = fb->timestamp.tv_usec;
+    
+        if (fb->format != PIXFORMAT_JPEG)
+	    {
+            bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+    
+            esp_camera_fb_return(fb);
+            fb = NULL;
+    
+            if (!jpeg_converted)
+	  	    {
+                log_e("JPEG compression failed");
+                res = ESP_FAIL;
+            }
+        }
+	    else {
+	  	    _jpg_buf = fb->buf;
+	  	    _jpg_buf_len = fb->len;
+        }
+    
+        if (res == ESP_OK)
+            res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+    
+        if (res == ESP_OK)
+	    {
+	  	    char *part_buf[128];
+    
+	  	    size_t hlen = snprintf((char *)part_buf, 128, _STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
+	  	    res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+        }
+    
+        if (res == ESP_OK)
+            res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+    
+        if (fb)
+	    {
+	  	    esp_camera_fb_return(fb);
+	  	    fb = NULL;
+	  	    _jpg_buf = NULL;
+        }
+	    else if (_jpg_buf)
+	    {
+	  	    free(_jpg_buf);
+	  	    _jpg_buf = NULL;
+        }
+    
+        if (res != ESP_OK) {
+            log_e("Send frame failed");
+            break;
+        }
+    
+	    #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+	  		int64_t fr_end = esp_timer_get_time();
+	  		int64_t frame_time = (fr_end - last_frame) / 1000;
+	  		last_frame = fr_end;
+    
+			  uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
+    
+	  		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(_jpg_buf_len) >> 10,
+	  															   (uint32_t)frame_time,
+	  															   1000.0 / (uint32_t)frame_time,
+	  															   avg_frame_time,
+	  															   1000.0 / avg_frame_time
+	  			);
+	    #endif
+    }
 
   #if defined(LED_GPIO_NUM)
       isStreaming = false;
@@ -369,98 +370,55 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
 // Input: req- valid request
 static esp_err_t stream90640_handler(httpd_req_t *req)
 {
-	struct timeval _timestamp;
-	size_t _jpg_buf_len = 0;
-	uint8_t *_jpg_buf = NULL;
-
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
 	static int64_t last_frame = 0;
 	if (!last_frame) last_frame = esp_timer_get_time();
 #endif
 
-	esp_err_t res = ESP_OK;
+	esp_err_t res;
 	res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
 	if (res != ESP_OK) return res;
 
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 	httpd_resp_set_hdr(req, "X-Framerate", "60");
 
-	camera_fb_t *fb = NULL;
+	mlx_fb_t fb = {};
 	while (true)
 	{
-		fb = esp_camera_fb_get();
-		if (!fb) {
-			log_e("Camera capture failed");
-			res = ESP_FAIL;
-			break;
-		}
+		fb = MLX90640_fb_get(NULL);
 
-		_timestamp.tv_sec  = fb->timestamp.tv_sec;
-		_timestamp.tv_usec = fb->timestamp.tv_usec;
-
-		if (fb->format != PIXFORMAT_JPEG)
-		{
-			bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
-
-			esp_camera_fb_return(fb);
-			fb = NULL;
-
-			if (!jpeg_converted)
-			{
-				log_e("JPEG compression failed");
-				res = ESP_FAIL;
-			}
-		}
-		else {
-			_jpg_buf = fb->buf;
-			_jpg_buf_len = fb->len;
-		}
-
-		if (res == ESP_OK)
-			res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
-
+		res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
 		if (res == ESP_OK)
 		{
 			char *part_buf[128];
 
-			size_t hlen = snprintf((char *)part_buf, 128, _STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
+			size_t hlen = snprintf((char *)part_buf, 128,
+				                   _STREAM_PART, fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 			res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
 		}
 
 		if (res == ESP_OK)
-			res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
-
-		if (fb)
-		{
-			esp_camera_fb_return(fb);
-			fb = NULL;
-			_jpg_buf = NULL;
-		}
-		else if (_jpg_buf)
-		{
-			free(_jpg_buf);
-			_jpg_buf = NULL;
-		}
+			res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
 
 		if (res != ESP_OK) {
 			log_e("Send frame failed");
 			break;
 		}
 
-#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
-		int64_t fr_end = esp_timer_get_time();
-		int64_t frame_time = (fr_end - last_frame) / 1000;
-		last_frame = fr_end;
+		#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+			int64_t fr_end = esp_timer_get_time();
+			int64_t frame_time = (fr_end - last_frame) / 1000;
+			last_frame = fr_end;
 
-		uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
+			uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
 
-		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(_jpg_buf_len) >> 10,
-			(uint32_t)frame_time,
-			1000.0 / (uint32_t)frame_time,
-			avg_frame_time,
-			1000.0 / avg_frame_time
-		);
-#endif
+			log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(fb.len) >> 10,
+				(uint32_t)frame_time,
+				1000.0 / (uint32_t)frame_time,
+				avg_frame_time,
+				1000.0 / avg_frame_time
+			);
+		#endif
 	}
 
 	return res;

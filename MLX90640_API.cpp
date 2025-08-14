@@ -16,7 +16,10 @@
  */
 #include "MLX90640_I2C_Driver.h"
 #include "MLX90640_API.h"
+#include "MLX90640_frame2bmp.h"
 #include <math.h>
+#include "esp_heap_caps.h"
+#include <stdlib.h>
 
 uint8_t mlx_slaveAddr = 0;
 paramsMLX90640 mlx90640 = {};
@@ -101,6 +104,18 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 	frameData[MLX90640_RAM_AUX_SUBPAGE]   = statusRegister & 0x0001;
 	
 	return frameData[MLX90640_RAM_AUX_SUBPAGE];
+}
+
+mlx_fb_t MLX90640_fb_get(uint16_t *frameData)
+{
+	mlx_fb_t fb = {};
+
+	return fb;
+}
+
+void MLX90640_fb_return(mlx_fb_t fb)
+{
+	free(fb.buf);
 }
 
 int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)

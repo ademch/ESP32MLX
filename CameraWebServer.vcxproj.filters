@@ -54,6 +54,15 @@
     <ClCompile Include="MLX90640_I2C_Driver.cpp">
       <Filter>Header Files\MLX</Filter>
     </ClCompile>
+    <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClCompile>
+    <ClCompile Include="esp32-camera-master\conversions\to_bmp.c">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClCompile>
+    <ClCompile Include="MLX90640_frame2bmp.cpp">
+      <Filter>Header Files\MLX</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board_config.h">
@@ -105,6 +114,9 @@
       <Filter>Header Files\MLX</Filter>
     </ClInclude>
     <ClInclude Include="MLX90640_I2C_Driver.h">
+      <Filter>Header Files\MLX</Filter>
+    </ClInclude>
+    <ClInclude Include="MLX90640_frame2bmp.h">
       <Filter>Header Files\MLX</Filter>
     </ClInclude>
   </ItemGroup>

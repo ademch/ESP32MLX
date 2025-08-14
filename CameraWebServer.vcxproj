@@ -111,12 +111,15 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.cpp" />
     <ClCompile Include="app_httpd.cpp" />
+    <ClCompile Include="esp32-camera-master\conversions\to_bmp.c" />
+    <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp" />
     <ClCompile Include="esp32-camera-master\driver\cam_hal.c" />
     <ClCompile Include="esp32-camera-master\driver\esp_camera.c" />
     <ClCompile Include="esp32-camera-master\driver\sensor.c" />
     <ClCompile Include="esp32-camera-master\sensors\ov2640.c" />
     <ClCompile Include="esp32-camera-master\target\esp32\ll_cam.c" />
     <ClCompile Include="MLX90640_API.cpp" />
+    <ClCompile Include="MLX90640_frame2bmp.cpp" />
     <ClCompile Include="MLX90640_I2C_Driver.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +137,7 @@
     <ClInclude Include="camera_index.h" />
     <ClInclude Include="camera_pins.h" />
     <ClInclude Include="MLX90640_API.h" />
+    <ClInclude Include="MLX90640_frame2bmp.h" />
     <ClInclude Include="MLX90640_I2C_Driver.h" />
     <ClInclude Include="__vm\.CameraWebServer.vsarduino.h" />
     <ClInclude Include="__vm\.ESP32MLX.vsarduino.h" />

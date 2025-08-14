@@ -17,6 +17,8 @@
 #ifndef _MLX640_API_H_
 #define _MLX640_API_H_
 
+#include "sys/time.h"
+
 	#define MLX90640_eepromSIZE         832
 	#define MLX90640_ramSIZEframe       832	// ram bytes (768 frame + 64 params tag)
 	#define MLX90640_ramSIZEuser        834	// contains two additional bytes
@@ -74,6 +76,14 @@
         uint16_t	brokenPixels[5];
         uint16_t	outlierPixels[5];  
     } paramsMLX90640;
+
+	typedef struct {
+		uint8_t* buf;               /*!< Pointer to the pixel data */
+		uint16_t len;               /*!< Length of the buffer in bytes */
+		uint16_t width;             /*!< Width of the buffer in pixels */
+		uint16_t height;            /*!< Height of the buffer in pixels */
+		struct timeval timestamp;   /*!< Timestamp since boot of the first DMA buffer of the frame */
+	} mlx_fb_t;
     
 	int MLX90640_Init(uint8_t _slaveAddr);
 
@@ -87,6 +97,9 @@
 	void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
     void MLX90640_CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
     
+	mlx_fb_t MLX90640_fb_get(uint16_t *frameData);
+	void     MLX90640_fb_return(mlx_fb_t fb);
+
 	int MLX90640_GetCurResolution();
 	int MLX90640_SetResolution(uint8_t resolution);
     
