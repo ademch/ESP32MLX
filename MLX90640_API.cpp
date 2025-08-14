@@ -33,6 +33,7 @@ uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
 // frame processed by MLX90640_CalculateTo
 static float mlx90640_float_frame[MLX90640_pixelCOUNT];		// 32 coloumns x 24 rows
 
+// 80% of delta between samples
 int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -51,6 +52,7 @@ void ExtractCILCParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 int  ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640);
 int  CheckAdjacentPixels(uint16_t pix1, uint16_t pix2);
 int  CheckEEPROMvalid(uint16_t *eeData);
+
 
 int MLX90640_Init(uint8_t _slaveAddr)
 {
@@ -78,17 +80,17 @@ int MLX90640_GetFrameData(uint16_t *frameData)
     uint16_t statusRegister;
     int error = 1;
 
-	static int64_t last_sample = 0;
-	if (!last_sample) last_sample = esp_timer_get_time();
+	static int64_t last_sampleUS = 0;
+	if (!last_sampleUS) last_sampleUS = esp_timer_get_time();
 
-	int64_t current_sample  = esp_timer_get_time();
+	int64_t current_sampleUS  = esp_timer_get_time();
 
-	int64_t msFromPrevFrame = (current_sample - last_sample) >> 10;		// convert to MS dividing by 1024
-	int64_t msToNextFrame = msFrame_delay - msFromPrevFrame;
+	int64_t msFromPrevFrame = (current_sampleUS - last_sampleUS) >> 10;		// convert to MS dividing by 1024
+	int64_t msToNextFrame   = msFrame_delay - msFromPrevFrame;
 
-	last_sample = current_sample;
+	last_sampleUS = current_sampleUS;
 
-	// wait if more than 10 ms 
+	// pause the task for more than 10 ms 
 	if (msToNextFrame > 10) delay(msToNextFrame);
 	
 	// Busy wait for the frame
@@ -108,7 +110,6 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 	// Reset "New DATA available in RAM" flag
     error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
     if (error == -1) return error;
-
 
     error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
@@ -138,7 +139,7 @@ mlx_fb_t MLX90640_fb_get()
 		}
 
 		float vdd = MLX90640_GetVdd(mlx90640_frame, &mlx90640);
-		float Ta = MLX90640_GetTa(mlx90640_frame, &mlx90640);
+		float Ta  = MLX90640_GetTa(mlx90640_frame, &mlx90640);
 
 		float tr = Ta - TA_SHIFT;
 
@@ -157,7 +158,7 @@ mlx_fb_t MLX90640_fb_get()
 	return fb;
 }
 
-void MLX90640_fb_return(mlx_fb_t fb)
+void MLX90640_fb_return(mlx_fb_t& fb)
 {
 	free(fb.buf);
 	fb.buf = NULL;

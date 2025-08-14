@@ -104,7 +104,7 @@ void setup() {
 
 		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
 
-	Serial.print("success");
+	Serial.println("success");
 
 
 	if (true)

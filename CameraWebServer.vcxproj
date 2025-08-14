@@ -123,6 +123,7 @@
     <ClCompile Include="MLX90640_I2C_Driver.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\cores\esp32\esp32-hal-log.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\WiFi\src\WiFi.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\Wire\src\Wire.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h" />

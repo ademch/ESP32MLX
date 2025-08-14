@@ -35,7 +35,7 @@
 #endif
 
 httpd_handle_t stream_httpd = NULL;
-httpd_handle_t camera_httpd = NULL;
+httpd_handle_t control_httpd = NULL;
 httpd_handle_t mlxthc_httpd = NULL;
 
 typedef struct
@@ -47,7 +47,8 @@ typedef struct
 #define PART_BOUNDARY "123456789000000000000987654321"
 static const char *_STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=" PART_BOUNDARY;
 static const char *_STREAM_BOUNDARY = "\r\n--" PART_BOUNDARY "\r\n";
-static const char *_STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %d.%06d\r\n\r\n";
+static const char *_STREAM_JPG_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %d.%06d\r\n\r\n";
+static const char *_STREAM_BMP_PART = "Content-Type: image/bmp\r\nContent-Length: %u\r\nX-Timestamp: %d.%06d\r\n\r\n";
 
 
 // ARDUHAL_LOG_LEVEL_NON-> ARDUHAL_LOG_LEVEL_ERROR -> ARDUHAL_LOG_LEVEL_WARN ->
@@ -317,7 +318,8 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
 	    {
 	  	    char *part_buf[128];
     
-	  	    size_t hlen = snprintf((char *)part_buf, 128, _STREAM_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
+	  	    size_t hlen = snprintf((char *)part_buf, 128,
+									_STREAM_JPG_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
 	  	    res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
         }
     
@@ -346,23 +348,23 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
 	  		int64_t frame_time = (fr_end - last_frame) / 1000;
 	  		last_frame = fr_end;
     
-			  uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
+			uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
     
 	  		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(_jpg_buf_len) >> 10,
-	  															   (uint32_t)frame_time,
-	  															   1000.0 / (uint32_t)frame_time,
-	  															   avg_frame_time,
-	  															   1000.0 / avg_frame_time
-	  			);
+	  			  (uint32_t)frame_time,
+	  			  1000.0 / (uint32_t)frame_time,
+	  			  avg_frame_time,
+	  			  1000.0 / avg_frame_time
+	  			 );
 	    #endif
     }
 
-  #if defined(LED_GPIO_NUM)
-      isStreaming = false;
-      enable_led(false);
-  #endif
+	#if defined(LED_GPIO_NUM)
+		isStreaming = false;
+		enable_led(false);
+	#endif
 
-  return res;
+	return res;
 }
 
 // GET /stream:82
@@ -387,18 +389,20 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 	{
 		fb = MLX90640_fb_get();
 
-		res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
-		if (res == ESP_OK)
-		{
-			char *part_buf[128];
+			res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
+			if (res == ESP_OK)
+			{
+				char *part_buf[128];
 
-			size_t hlen = snprintf((char *)part_buf, 128,
-				                   _STREAM_PART, fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
-			res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
-		}
+				size_t hlen = snprintf((char *)part_buf, 128,
+										_STREAM_BMP_PART, fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
+				res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+			}
 
-		if (res == ESP_OK)
-			res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
+			if (res == ESP_OK)
+				res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
+
+		MLX90640_fb_return(fb);
 
 		if (res != ESP_OK) {
 			log_e("Send frame failed");
@@ -413,11 +417,11 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 			uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
 
 			log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(fb.len) >> 10,
-				(uint32_t)frame_time,
-				1000.0 / (uint32_t)frame_time,
-				avg_frame_time,
-				1000.0 / avg_frame_time
-			);
+				  (uint32_t)frame_time,
+				  1000.0 / (uint32_t)frame_time,
+				  avg_frame_time,
+				  1000.0 / avg_frame_time
+			     );
 		#endif
 	}
 
@@ -551,10 +555,12 @@ static esp_err_t control_handler(httpd_req_t *req)
   return httpd_resp_send(req, NULL, 0);
 }
 
+
 static int print_reg(char *p, sensor_t *s, uint16_t reg, uint32_t mask)
 {
   return sprintf(p, "\"0x%x\":%u,", reg, s->get_reg(s, reg, mask));
 }
+
 
 static esp_err_t status_handler(httpd_req_t *req)
 {
@@ -805,11 +811,11 @@ static esp_err_t win_handler(httpd_req_t *req)
 
   sensor_t *s = esp_camera_sensor_get();
   int res = s->set_res_raw(s, startX, startY,
-	                          endX, endY,
-	                          offsetX, offsetY,
-	                          totalX, totalY,
-	                          outputX, outputY,
-	                          scale, binning);  // codespell:ignore totaly
+							endX, endY,
+							offsetX, offsetY,
+							totalX, totalY,
+							outputX, outputY,
+							scale, binning);  // codespell:ignore totaly
   if (res) return httpd_resp_send_500(req);
 
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
@@ -830,7 +836,7 @@ static esp_err_t index_handler(httpd_req_t *req)
   httpd_resp_set_type(req, "text/html");
   //httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
 
-  if (s->id.PID == OV3660_PID)
+  if	  (s->id.PID == OV3660_PID)
       return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
   else if (s->id.PID == OV5640_PID)
       return httpd_resp_send(req, (const char *)index_ov5640_html_gz, index_ov5640_html_gz_len);
@@ -1001,19 +1007,19 @@ void startControlAndStreamServers()
 
 
     log_i("Starting web server on port: '%d'", config.server_port);
-    if (httpd_start(&camera_httpd, &config) == ESP_OK)
+    if (httpd_start(&control_httpd, &config) == ESP_OK)
     {
-        httpd_register_uri_handler(camera_httpd, &index_uri);
-        httpd_register_uri_handler(camera_httpd, &control_uri);
-        httpd_register_uri_handler(camera_httpd, &status_uri);
-        httpd_register_uri_handler(camera_httpd, &capture_uri);
-        httpd_register_uri_handler(camera_httpd, &bmp_uri);
+        httpd_register_uri_handler(control_httpd, &index_uri);
+        httpd_register_uri_handler(control_httpd, &control_uri);
+        httpd_register_uri_handler(control_httpd, &status_uri);
+        httpd_register_uri_handler(control_httpd, &capture_uri);
+        httpd_register_uri_handler(control_httpd, &bmp_uri);
     
-        httpd_register_uri_handler(camera_httpd, &xclk_uri);
-        httpd_register_uri_handler(camera_httpd, &reg_uri);
-        httpd_register_uri_handler(camera_httpd, &greg_uri);
-        httpd_register_uri_handler(camera_httpd, &pll_uri);
-        httpd_register_uri_handler(camera_httpd, &win_uri);
+        httpd_register_uri_handler(control_httpd, &xclk_uri);
+        httpd_register_uri_handler(control_httpd, &reg_uri);
+        httpd_register_uri_handler(control_httpd, &greg_uri);
+        httpd_register_uri_handler(control_httpd, &pll_uri);
+        httpd_register_uri_handler(control_httpd, &win_uri);
     }
     
     config.server_port += 1;
