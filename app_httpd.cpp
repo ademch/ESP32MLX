@@ -385,7 +385,7 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 	mlx_fb_t fb = {};
 	while (true)
 	{
-		fb = MLX90640_fb_get(NULL);
+		fb = MLX90640_fb_get();
 
 		res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
 		if (res == ESP_OK)

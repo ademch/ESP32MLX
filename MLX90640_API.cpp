@@ -19,12 +19,21 @@
 #include "MLX90640_frame2bmp.h"
 #include <math.h>
 #include "esp_heap_caps.h"
+#include "esp_timer.h"
 #include <stdlib.h>
+#include <Arduino.h>
 
+// device address
 uint8_t mlx_slaveAddr = 0;
+
+// params
 paramsMLX90640 mlx90640 = {};
-uint16_t mlx90640Frame[MLX90640_ramSIZEuser];
-static float aTvalues[MLX90640_pixelCOUNT];		// 32 coloumns x 24 rows
+// frame populated by MLX90640_GetFrameData
+uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
+// frame processed by MLX90640_CalculateTo
+static float mlx90640_float_frame[MLX90640_pixelCOUNT];		// 32 coloumns x 24 rows
+
+int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -69,6 +78,20 @@ int MLX90640_GetFrameData(uint16_t *frameData)
     uint16_t statusRegister;
     int error = 1;
 
+	static int64_t last_sample = 0;
+	if (!last_sample) last_sample = esp_timer_get_time();
+
+	int64_t current_sample  = esp_timer_get_time();
+
+	int64_t msFromPrevFrame = (current_sample - last_sample) >> 10;		// convert to MS dividing by 1024
+	int64_t msToNextFrame = msFrame_delay - msFromPrevFrame;
+
+	last_sample = current_sample;
+
+	// wait if more than 10 ms 
+	if (msToNextFrame > 10) delay(msToNextFrame);
+	
+	// Busy wait for the frame
 	uint16_t dataReady = 0;
     while (dataReady == 0)	// Wait for data ready flag
     {
@@ -76,27 +99,17 @@ int MLX90640_GetFrameData(uint16_t *frameData)
         if (error != 0) return error;
  
         dataReady = statusRegister & 0x0008;	// B3: New data available in ram
-    }       
-        
-	uint8_t cnt = 0;
-	while ((dataReady != 0) && (cnt < 5))
-    { 
-        error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 0x0030);
-        if (error == -1) return error;
-
-        error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
-        if (error != 0) return error;
-      
-        error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
-        if (error != 0) return error;
-
-        dataReady = statusRegister & 0x0008;	// B3: New data available in ram
-
-		cnt++;
     }
     
-    if (cnt > 4) return -8;
-   
+	// Read frame
+	error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
+	if (error != 0) return error;
+
+	// Reset "New DATA available in RAM" flag
+    error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
+    if (error == -1) return error;
+
+
     error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
 
@@ -106,17 +119,50 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 	return frameData[MLX90640_RAM_AUX_SUBPAGE];
 }
 
-mlx_fb_t MLX90640_fb_get(uint16_t *frameData)
+mlx_fb_t MLX90640_fb_get()
 {
-	mlx_fb_t fb = {};
+	float EMMISIVITY = 0.95f;
+	float TA_SHIFT = 8.0f;
 
+	mlx_fb_t fb = {};
+	
+	// sample twice sequentially to be sure we get 0 and 1st subpages
+	for (uint8_t x = 0; x < 2; x++)
+	{
+		int status = MLX90640_GetFrameData(mlx90640_frame);
+		if (status < 0)
+		{
+			Serial.print("GetFrame Error: ");
+			Serial.println(status);
+			return fb;	// empty fb
+		}
+
+		float vdd = MLX90640_GetVdd(mlx90640_frame, &mlx90640);
+		float Ta = MLX90640_GetTa(mlx90640_frame, &mlx90640);
+
+		float tr = Ta - TA_SHIFT;
+
+		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, EMMISIVITY, tr, mlx90640_float_frame);
+	}
+
+	MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
+
+	uint64_t us = (uint64_t)esp_timer_get_time();
+	fb.timestamp.tv_sec  = us / 1000000UL;
+	fb.timestamp.tv_usec = us % 1000000UL;
+
+	fb.width  = 32;
+	fb.height = 24;
+	
 	return fb;
 }
 
 void MLX90640_fb_return(mlx_fb_t fb)
 {
 	free(fb.buf);
+	fb.buf = NULL;
 }
+
 
 int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
@@ -145,7 +191,7 @@ int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 //------------------------------------------------------------------------------
 
-int MLX90640_SetResolution(uint8_t resolution)
+int MLX90640_SetADCresolution(uint8_t resolution)
 {
     int value = (resolution & 0x03) << 10;
     
@@ -163,7 +209,7 @@ int MLX90640_SetResolution(uint8_t resolution)
 
 //------------------------------------------------------------------------------
 
-int MLX90640_GetCurResolution()
+int MLX90640_GetCurADCresolution()
 {
     uint16_t controlRegister1;
     int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
@@ -187,7 +233,37 @@ int MLX90640_SetRefreshRate(uint8_t refreshRate)
     {
         value = (controlRegister1 & 0xFC7F) | value;			// B7-B9
         error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
-    }    
+    }
+
+
+	switch (refreshRate) {
+	case MLX90640_REFRESH_RATE_05HZ:
+		msFrame_delay = 0.8 * 1000 / 0.5;
+		break;
+	case MLX90640_REFRESH_RATE_1HZ:
+		msFrame_delay = 0.8 * 1000 / 1;
+		break;
+	case MLX90640_REFRESH_RATE_4HZ:
+		msFrame_delay = 0.8 * 1000 / 4;
+		break;
+	case MLX90640_REFRESH_RATE_8HZ:
+		msFrame_delay = 0.8 * 1000 / 8;
+		break;
+	case MLX90640_REFRESH_RATE_16HZ:
+		msFrame_delay = 0.8 * 1000 / 16;
+		break;
+	case MLX90640_REFRESH_RATE_32HZ:
+		msFrame_delay = 0.8 * 1000 / 32;
+		break;
+	case MLX90640_REFRESH_RATE_64HZ:
+		msFrame_delay = 0.8 * 1000 / 64;
+		break;
+
+	case MLX90640_REFRESH_RATE_2HZ:
+	default:
+		msFrame_delay = 0.8 * 1000 / 2;
+		break;
+	}
     
     return error;
 }
@@ -481,8 +557,7 @@ void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 	int16_t kVdd;
     
     kVdd = (eeData[51] & 0xFF00) >> 8;	// MSB
-    if (kVdd > 127)
-		kVdd = kVdd - 256;
+    if (kVdd > 127) kVdd = kVdd - 256;
     kVdd = kVdd << 5;	// * 2^5
   
 	vdd25 = eeData[51] & 0x00FF;		// LSB

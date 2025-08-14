@@ -130,6 +130,7 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_driver_ledc\include\driver\ledc.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include\esp_http_server.h" />
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_timer\include\esp_timer.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\hal\include\hal\ledc_types.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\soc\esp32\include\soc\soc_caps.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\qio_qspi\include\sdkconfig.h" />

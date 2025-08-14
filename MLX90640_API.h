@@ -97,11 +97,11 @@
 	void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
     void MLX90640_CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
     
-	mlx_fb_t MLX90640_fb_get(uint16_t *frameData);
+	mlx_fb_t MLX90640_fb_get();
 	void     MLX90640_fb_return(mlx_fb_t fb);
 
-	int MLX90640_GetCurResolution();
-	int MLX90640_SetResolution(uint8_t resolution);
+	int MLX90640_GetCurADCresolution();
+	int MLX90640_SetADCresolution(uint8_t resolution);
     
 	int MLX90640_GetRefreshRate();
 	int MLX90640_SetRefreshRate(uint8_t refreshRate);

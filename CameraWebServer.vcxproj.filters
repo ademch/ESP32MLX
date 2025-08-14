@@ -25,6 +25,9 @@
     <Filter Include="Header Files\External\Wire">
       <UniqueIdentifier>{4ade1e1f-7e03-41e7-86d7-a9732a4eadcc}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\External\HTTP_SERVER">
+      <UniqueIdentifier>{e40f953a-d274-4b05-bc2f-2fd44af9e363}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app_httpd.cpp">
@@ -98,9 +101,6 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h">
       <Filter>Header Files\External\CAMERA</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include\esp_http_server.h">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
       <Filter>Header Files\External\CAMERA</Filter>
     </ClInclude>
@@ -118,6 +118,12 @@
     </ClInclude>
     <ClInclude Include="MLX90640_frame2bmp.h">
       <Filter>Header Files\MLX</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_http_server\include\esp_http_server.h">
+      <Filter>Header Files\External\HTTP_SERVER</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\esp_timer\include\esp_timer.h">
+      <Filter>Header Files\External</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
