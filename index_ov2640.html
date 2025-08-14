@@ -704,8 +704,8 @@
         <script>
 			document.addEventListener('DOMContentLoaded', function (event)
 			{
-				var baseHost = document.location.origin
-				var streamUrl = baseHost + ':81'
+			    var baseHost  = document.location.origin;
+			    var streamUrl = baseHost + ':81';
 
 				function fetchUrl(url, cb)
 				{
@@ -723,10 +723,10 @@
 				}
 
 			  function setReg(reg, offset, mask, value, cb) {
-				//console.log('Set Reg', '0x'+reg.toString(16), offset, '0x'+mask.toString(16), '0x'+value.toString(16), '('+value+')');
-				value = (value & mask) << offset;
-				mask = mask << offset;
-				fetchUrl(`${baseHost}/reg?reg=${reg}&mask=${mask}&val=${value}`, cb);
+				  //console.log('Set Reg', '0x'+reg.toString(16), offset, '0x'+mask.toString(16), '0x'+value.toString(16), '('+value+')');
+				  value = (value & mask) << offset;
+				  mask = mask << offset;
+				  fetchUrl(`${baseHost}/reg?reg=${reg}&mask=${mask}&val=${value}`, cb);
 			  }
 
 			  function getReg(reg, offset, mask, cb) {
@@ -743,7 +743,7 @@
 				  }
 
 			  function setXclk(xclk, cb) {
-				fetchUrl(`${baseHost}/xclk?xclk=${xclk}`, cb);
+				  fetchUrl(`${baseHost}/xclk?xclk=${xclk}`, cb);
 			  }
 
 			  function setWindow(start_x, start_y,

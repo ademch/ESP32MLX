@@ -15,11 +15,6 @@
 #include <Wire.h>
 #include "MLX90640_I2C_Driver.h"
 
-void MLX90640_I2CInit()
-{
-
-}
-
 // Read a number of words from startAddress into Data array.
 // Returns 0 if successful, -1 if error
 int MLX90640_I2CRead(uint8_t _deviceAddress, unsigned int startAddress, unsigned int nWordsToRead, uint16_t *data)
@@ -49,7 +44,7 @@ int MLX90640_I2CRead(uint8_t _deviceAddress, unsigned int startAddress, unsigned
 		if (nBytesToRead > I2C_BUFFER_LENGTH)
 			nBytesToRead = I2C_BUFFER_LENGTH;
 
-		Wire.requestFrom((uint8_t)_deviceAddress, nBytesToRead);
+		Wire.requestFrom(_deviceAddress, nBytesToRead);
 		if (Wire.available())
 		{
 			// Store data into array
@@ -73,11 +68,13 @@ int MLX90640_I2CRead(uint8_t _deviceAddress, unsigned int startAddress, unsigned
 //Write two bytes to a two byte address
 int MLX90640_I2CWrite(uint8_t _deviceAddress, unsigned int writeAddress, uint16_t data)
 {
-	Wire.beginTransmission((uint8_t)_deviceAddress);
+	Wire.beginTransmission(_deviceAddress);
+
 		Wire.write(writeAddress >> 8);   // MSB
 		Wire.write(writeAddress & 0xFF); // LSB
 		Wire.write(data >> 8);			 // MSB
 		Wire.write(data & 0xFF);		 // LSB
+	
 	if (Wire.endTransmission() != 0)
 	{
 		// Sensor did not ACK
