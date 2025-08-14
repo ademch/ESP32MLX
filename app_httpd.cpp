@@ -112,9 +112,9 @@ static esp_err_t bmp_handler(httpd_req_t *req)
   camera_fb_t *fb = esp_camera_fb_get();
 	  if (!fb)
 	  {
-		log_e("Camera capture failed");
-		httpd_resp_send_500(req);
-		return ESP_FAIL;
+		  log_e("Camera capture failed");
+		  httpd_resp_send_500(req);
+		  return ESP_FAIL;
 	  }
 
 	  // request has httpd_req_aux structure holding temporarily response details
@@ -150,7 +150,7 @@ static esp_err_t bmp_handler(httpd_req_t *req)
 
 #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
   uint64_t fr_end = esp_timer_get_time();
-  log_i("BMP: %llums, %uB", (uint64_t)((fr_end - fr_start) / 1000), buf_len); 
+  log_i("BMP: %llu ms, %uB", (uint64_t)((fr_end - fr_start) / 1000), buf_len); 
 #endif
 
   return res;
@@ -178,7 +178,7 @@ static size_t jpg_encode_stream(void *arg, size_t index, const void *data, size_
 // Get image in JPEG format
 //
 // Input: req- valid request
-static esp_err_t capture_handler(httpd_req_t *req)
+static esp_err_t ov2640_capture_handler(httpd_req_t *req)
 {
   camera_fb_t *fb = NULL;
   esp_err_t res = ESP_OK;
@@ -253,6 +253,45 @@ static esp_err_t capture_handler(httpd_req_t *req)
 
   return res;
 }
+
+// GET /capture90640
+// Get image in BMP format
+//
+// Input: req- valid request
+static esp_err_t mlx90640_capture_handler(httpd_req_t *req)
+{
+	esp_err_t res = ESP_OK;
+
+	#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+		int64_t fr_start = esp_timer_get_time();
+	#endif
+
+	log_i("/capture90640 received");
+
+	mlx_fb_t fb = {};
+
+	fb = MLX90640_fb_get();
+
+		httpd_resp_set_type(req, "image/bmp");
+		httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.bmp");
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+		char ts[32];
+		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
+		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
+
+		res = httpd_resp_send(req, (const char *)fb.buf, fb.len);
+
+	MLX90640_fb_return(fb);
+
+	#if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
+		int64_t fr_end = esp_timer_get_time();
+		log_i("BMP: %u kb %ums", (uint32_t)(fb.len) >> 10, (uint32_t)((fr_end - fr_start) / 1000));
+	#endif
+
+	return res;
+}
+
 
 // GET /stream
 //
@@ -846,127 +885,140 @@ static esp_err_t index_handler(httpd_req_t *req)
 
 void startControlAndStreamServers()
 {
-  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.max_uri_handlers = 16;
+	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+	config.max_uri_handlers = 16;
 
-  httpd_uri_t index_uri = {
-    .uri = "/",
-    .method = HTTP_GET,
-    .handler = index_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
+	httpd_uri_t ctrl_index_uri = {
+		.uri = "/",
+		.method = HTTP_GET,
+		.handler = index_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_status_uri = {
+		.uri = "/status",
+		.method = HTTP_GET,
+		.handler = status_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_control_uri = {
+		.uri = "/control",
+		.method = HTTP_GET,
+		.handler = control_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t capture2640_uri = {
+		.uri = "/capture2640",
+		.method = HTTP_GET,
+		.handler = ov2640_capture_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t capture90640_uri = {
+		.uri = "/capture90640",
+		.method = HTTP_GET,
+		.handler = mlx90640_capture_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_bmp_uri = {
+		.uri = "/bmp",
+		.method = HTTP_GET,
+		.handler = bmp_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_xclk_uri = {
+		.uri = "/xclk",
+		.method = HTTP_GET,
+		.handler = xclk_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_reg_uri = {
+		.uri = "/reg",
+		.method = HTTP_GET,
+		.handler = reg_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
+	httpd_uri_t ctrl_greg_uri = {
+		.uri = "/greg",
+		.method = HTTP_GET,
+		.handler = greg_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
 	#endif
-  };
+	};
 
-  httpd_uri_t status_uri = {
-    .uri = "/status",
-    .method = HTTP_GET,
-    .handler = status_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
+	httpd_uri_t ctrl_pll_uri = {
+		.uri = "/pll",
+		.method = HTTP_GET,
+		.handler = pll_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
 
-  httpd_uri_t control_uri = {
-    .uri = "/control",
-    .method = HTTP_GET,
-    .handler = control_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t capture_uri = {
-    .uri = "/capture",
-    .method = HTTP_GET,
-    .handler = capture_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t bmp_uri = {
-    .uri = "/bmp",
-    .method = HTTP_GET,
-    .handler = bmp_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t xclk_uri = {
-    .uri = "/xclk",
-    .method = HTTP_GET,
-    .handler = xclk_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t reg_uri = {
-    .uri = "/reg",
-    .method = HTTP_GET,
-    .handler = reg_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t greg_uri = {
-    .uri = "/greg",
-    .method = HTTP_GET,
-    .handler = greg_handler,
-    .user_ctx = NULL
-	#ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-	#endif
-  };
-
-  httpd_uri_t pll_uri = {
-    .uri = "/pll",
-    .method = HTTP_GET,
-    .handler = pll_handler,
-    .user_ctx = NULL
-    #ifdef CONFIG_HTTPD_WS_SUPPORT
-    ,
-    .is_websocket = true,
-    .handle_ws_control_frames = false,
-    .supported_subprotocol = NULL
-    #endif
-  };
-
-	httpd_uri_t win_uri = {
+	httpd_uri_t ctrl_win_uri = {
 		.uri = "/resolution",
 		.method = HTTP_GET,
 		.handler = win_handler,
@@ -1005,21 +1057,22 @@ void startControlAndStreamServers()
 		#endif
 	};
 
-
     log_i("Starting web server on port: '%d'", config.server_port);
     if (httpd_start(&control_httpd, &config) == ESP_OK)
     {
-        httpd_register_uri_handler(control_httpd, &index_uri);
-        httpd_register_uri_handler(control_httpd, &control_uri);
-        httpd_register_uri_handler(control_httpd, &status_uri);
-        httpd_register_uri_handler(control_httpd, &capture_uri);
-        httpd_register_uri_handler(control_httpd, &bmp_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_index_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_control_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_status_uri);
+        httpd_register_uri_handler(control_httpd, &capture2640_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_bmp_uri);
     
-        httpd_register_uri_handler(control_httpd, &xclk_uri);
-        httpd_register_uri_handler(control_httpd, &reg_uri);
-        httpd_register_uri_handler(control_httpd, &greg_uri);
-        httpd_register_uri_handler(control_httpd, &pll_uri);
-        httpd_register_uri_handler(control_httpd, &win_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_xclk_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_reg_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_greg_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_pll_uri);
+        httpd_register_uri_handler(control_httpd, &ctrl_win_uri);
+
+		httpd_register_uri_handler(control_httpd, &capture90640_uri);
     }
     
     config.server_port += 1;
@@ -1038,7 +1091,7 @@ void startControlAndStreamServers()
     if (httpd_start(&mlxthc_httpd, &config) == ESP_OK)
     {
 	    httpd_register_uri_handler(mlxthc_httpd, &stream90640_uri);
-    }
+	}
 }
 
 void setupLedFlash()

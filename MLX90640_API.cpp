@@ -91,7 +91,11 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 	last_sampleUS = current_sampleUS;
 
 	// pause the task for more than 10 ms 
-	if (msToNextFrame > 10) delay(msToNextFrame);
+	if (msToNextFrame > 10)
+	{
+		log_i("Awaiting mlxFrame for %lld ms", msToNextFrame);
+		delay(msToNextFrame);
+	}
 	
 	// Busy wait for the frame
 	uint16_t dataReady = 0;
