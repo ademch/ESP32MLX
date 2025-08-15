@@ -89,7 +89,7 @@ void setup() {
 	Serial.print("MLX90640 thermal camera init...");
 
 		// Initialize I2C with custom pins and frequency (default 100kHz)
-		Wire.begin(14, 15, 100000);  // SDA, SCL, frequency in Hz
+		Wire.begin(14, 15, 400000);				// SDA, SCL, frequency in Hz
 
 		const uint8_t MLX90640_address = 0x33;  // Default 7-bit unshifted address of the MLX90640
 

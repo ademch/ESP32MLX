@@ -80,6 +80,10 @@ int MLX90640_GetFrameData(uint16_t *frameData)
     uint16_t statusRegister;
     int error = 1;
 
+// --------------------------------------------------------------------------
+// Introduce logic for measuring how much time has passed since previous frame
+// to be able to pause the task before the next frame becomes available
+
 	static int64_t last_sampleUS = 0;
 	if (!last_sampleUS) last_sampleUS = esp_timer_get_time();
 
@@ -96,10 +100,11 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 		log_i("Awaiting mlxFrame for %lld ms", msToNextFrame);
 		delay(msToNextFrame);
 	}
+//  ---------------------------------------------------------------------------
 	
-	// Busy wait for the frame
+	// Busy wait for the frame ("data ready" flag)
 	uint16_t dataReady = 0;
-    while (dataReady == 0)	// Wait for data ready flag
+    while (dataReady == 0)
     {
         error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
         if (error != 0) return error;
@@ -115,6 +120,7 @@ int MLX90640_GetFrameData(uint16_t *frameData)
     error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
     if (error == -1) return error;
 
+	// Read and store controlRegister1
     error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
 
@@ -126,12 +132,12 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 
 mlx_fb_t MLX90640_fb_get()
 {
-	float EMMISIVITY = 0.95f;
-	float TA_SHIFT = 8.0f;
+	float Emmisivity        = 0.95f;
+	float TambientReflected = 20.0f;
 
 	mlx_fb_t fb = {};
 	
-	// sample twice sequentially to be sure we get 0 and 1st subpages
+	// sample twice sequentially to be sure we get 0th and 1st subpages
 	for (uint8_t x = 0; x < 2; x++)
 	{
 		int status = MLX90640_GetFrameData(mlx90640_frame);
@@ -142,12 +148,7 @@ mlx_fb_t MLX90640_fb_get()
 			return fb;	// empty fb
 		}
 
-		float vdd = MLX90640_GetVdd(mlx90640_frame, &mlx90640);
-		float Ta  = MLX90640_GetTa(mlx90640_frame, &mlx90640);
-
-		float tr = Ta - TA_SHIFT;
-
-		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, EMMISIVITY, tr, mlx90640_float_frame);
+		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, Emmisivity, TambientReflected, mlx90640_float_frame);
 	}
 
 	MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
@@ -340,24 +341,28 @@ int MLX90640_GetCurMode()
 }
 
 //------------------------------------------------------------------------------
-
+// Calculate Object Temperature from raw data
+//
 // frameData  - raw frame from MLX90640_GetFrameData()
-// params     - structure holding calibration constants from MLX90640_ExtractParameters()
-// emissivity - target surface emissivity (0.0-1.0)
-// tr         - reflected apparent temperature (Celsius), usually the ambient temperature
+// params     - structure holding calibration constants after MLX90640_ExtractParameters()
+// emissivity - target surface emissivity (0.02-0.2: Shiny metal, 0.96: Matte black paint)
+// tr         - ambient temperature reflected by the object into the sensor in Celsius
 // afResult   - output array of 768 floats (32x24 pixels) in Celsius
-void MLX90640_CalculateTo(uint16_t *frameData,
-	                      const paramsMLX90640 *params,
+void MLX90640_CalculateTo(uint16_t* frameData,
+	                      const paramsMLX90640* params,
 	                      float emissivity,
 	                      float tr,
 	                      float *afResult)
 {
 	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
+
 	float       vdd  = MLX90640_GetVdd(frameData, params);
     float       ta   = MLX90640_GetTa(frameData, params);
     float       ta4  = pow((ta + 273.15), (double)4);
     float       tr4  = pow((tr + 273.15), (double)4);
     float       taTr = tr4 - (tr4-ta4)/emissivity;
+
+	ESP_LOGD("MLX90640_CalculateTo", "Tdie=%3.1f, Vdd=%4.2", ta, vdd);
     
 	float alphaCorrR[4];
     alphaCorrR[0] = 1 / (1 + params->ksTo[0] * 40);
@@ -443,9 +448,11 @@ void MLX90640_CalculateTo(uint16_t *frameData,
     }
 }
 
-//------------------------------------------------------------------------------
-// Gives raw signal levels without converting to absolute temperatures
+
+// Outputs values are in arbitrary ADC-related units (counts) and can be negative
+// without converting to absolute temperatures
 // Output is good for visualization (grayscale) but not for precise thermometry
+// E.g.: Motion detection, Scene change detection, Simple tracking
 void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *afResult)
 {
 	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
@@ -521,8 +528,7 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
     }
 }
 
-//------------------------------------------------------------------------------
-
+// Calculats power supply voltage
 float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = frameData[MLX90640_RAM_VDD];
@@ -533,13 +539,14 @@ float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 	float resolutionCor = pow(2, (double)params->resolutionEE) /
 		                  pow(2, (double)resolutionRAM);
     
+	// convert from adc counts to voltage
 	vdd = (resolutionCor * vdd - params->vdd25) / params->kVdd + 3.3;
     
     return vdd;
 }
 
 //------------------------------------------------------------------------------
-// Ambient temperature
+// Calculate ambient temperature (die temperature)
 float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = MLX90640_GetVdd(frameData, params);
@@ -573,8 +580,8 @@ void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 	int16_t kVdd;
     
     kVdd = (eeData[51] & 0xFF00) >> 8;	// MSB
-    if (kVdd > 127) kVdd = kVdd - 256;
-    kVdd = kVdd << 5;	// * 2^5
+    if (kVdd > 127) kVdd = kVdd - 256;	// observe sign
+    kVdd = 32 * kVdd;					// * 2^5
   
 	vdd25 = eeData[51] & 0x00FF;		// LSB
     vdd25 = ((vdd25 - 256) << 5) - 8192;
@@ -609,7 +616,7 @@ void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 void ExtractGainParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
-    mlx90640->gainEE = (int16_t)eeData[48];
+    mlx90640->gainEE = (int16_t)eeData[48];	// no bits are changed, the number type just gets reinterpeted
 }
 
 //------------------------------------------------------------------------------
@@ -659,7 +666,7 @@ void ExtractKsToParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     mlx90640->ct[3] = (eeData[63] & 0x0F00) >> 8;
     
     mlx90640->ct[2] = mlx90640->ct[2]*step;
-    mlx90640->ct[3] = mlx90640->ct[3]*step + mlx90640->ct[2];
+    mlx90640->ct[3] = mlx90640->ct[2] + mlx90640->ct[3]*step;
     
 	// Extract KsTo coefficients common for all pixels
     int KsToScale = (eeData[63] & 0x000F) + 8;		// unsigned
@@ -688,11 +695,11 @@ void ExtractSensivityAlphaParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     int accColumn[32];
     int p = 0;
 
-	uint8_t accRemScale    = eeData[32] & 0x000F;					// unsigned
-	uint8_t accColumnScale = (eeData[32] & 0x00F0) >> 4;			// unsigned
-	uint8_t accRowScale    = (eeData[32] & 0x0F00) >> 8;			// unsigned
+	uint8_t accRemScale    =   eeData[32] & 0x000F;					// unsigned
+	uint8_t accColumnScale =  (eeData[32] & 0x00F0) >> 4;			// unsigned
+	uint8_t accRowScale    =  (eeData[32] & 0x0F00) >> 8;			// unsigned
 	uint8_t alphaScale     = ((eeData[32] & 0xF000) >> 12) + 30;	// unsigned
-    int     alphaAverage   = eeData[33];							// signed
+    int     alphaAverage   =   eeData[33];							// signed
     
     for (int i = 0; i < 6; i++)
     {
@@ -703,8 +710,7 @@ void ExtractSensivityAlphaParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
         accRow[p + 3] = (eeData[34 + i] & 0xF000) >> 12;
     }
 	// observe sign
-    for (int i = 0; i < 24; i++)
-    {
+    for (int i = 0; i < 24; i++) {
         if (accRow[i] > 7) accRow[i] = accRow[i] - 16;
     }
     
@@ -717,8 +723,7 @@ void ExtractSensivityAlphaParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
         accColumn[p + 3] = (eeData[40 + i] & 0xF000) >> 12;
     }
 	// observe sign
-    for (int i = 0; i < 32; i ++)
-    {
+    for (int i = 0; i < 32; i ++) {
         if (accColumn[i] > 7) accColumn[i] = accColumn[i] - 16;
     }
 
@@ -731,12 +736,9 @@ void ExtractSensivityAlphaParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
             if (mlx90640->alpha[p] > 31)
                 mlx90640->alpha[p] = mlx90640->alpha[p] - 64;
 
-            mlx90640->alpha[p]  = mlx90640->alpha[p] * (1 << accRemScale);
-            mlx90640->alpha[p] += alphaAverage;
-			mlx90640->alpha[p] += accRow[i] << accRowScale;
-			mlx90640->alpha[p] += accColumn[j] << accColumnScale;
-			mlx90640->alpha[p] += mlx90640->alpha[p];
-			mlx90640->alpha[p] /= pow(2,(double)alphaScale);
+			mlx90640->alpha[p] = mlx90640->alpha[p] * (1 << accRemScale);
+			mlx90640->alpha[p] = alphaAverage + (accRow[i] << accRowScale) + (accColumn[j] << accColumnScale) + mlx90640->alpha[p];
+			mlx90640->alpha[p] = mlx90640->alpha[p] / pow(2, (double)alphaScale);
         }
     }
 }
@@ -752,7 +754,7 @@ void ExtractOffsetParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 	uint8_t occRemScale    = (eeData[16] & 0x000F);			// unsigned
 	uint8_t occColumnScale = (eeData[16] & 0x00F0) >> 4;	// unsigned
 	uint8_t occRowScale    = (eeData[16] & 0x0F00) >> 8;	// unsigned
-	int16_t offsetAverage  = (int16_t)eeData[17];			// signed
+	int16_t offsetAverage  = (int16_t)eeData[17];			// signed, no bits are changed, just reinterpreted
     
     for (int i = 0; i < 6; i++)
     {
@@ -763,8 +765,7 @@ void ExtractOffsetParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
         occRow[p + 3] = (eeData[18 + i] & 0xF000) >> 12;
     }
     // observe sign
-	for (int i = 0; i < 24; i++)
-    {
+	for (int i = 0; i < 24; i++) {
         if (occRow[i] > 7) occRow[i] = occRow[i] - 16;
     }
     
@@ -777,8 +778,7 @@ void ExtractOffsetParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
         occColumn[p + 3] = (eeData[24 + i] & 0xF000) >> 12;
     }
 	// observe sign
-    for (int i = 0; i < 32; i ++)
-    {
+    for (int i = 0; i < 32; i ++) {
         if (occColumn[i] > 7) occColumn[i] = occColumn[i] - 16;
     }
 
@@ -791,10 +791,8 @@ void ExtractOffsetParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
             if (mlx90640->offset[p] > 31)
                 mlx90640->offset[p] = mlx90640->offset[p] - 64;
 
-            mlx90640->offset[p]  = mlx90640->offset[p] << occRemScale;
-            mlx90640->offset[p] += offsetAverage;
-			mlx90640->offset[p] += occRow[i] << occRowScale;
-			mlx90640->offset[p] += occColumn[j] << occColumnScale;
+			mlx90640->offset[p] = mlx90640->offset[p] * (1 << occRemScale);
+			mlx90640->offset[p] = (offsetAverage + (occRow[i] << occRowScale) + (occColumn[j] << occColumnScale) + mlx90640->offset[p]);
 		}
     }
 }
@@ -833,14 +831,14 @@ void ExtractKtaPixelParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
         for (int j = 0; j < 32; j ++)
         {
             int p = 32 * i +j;
-			uint8_t ind = 2*(p/32 - (p/64)*2) + p%2;
+			uint8_t split = 2*(p/32 - (p/64)*2) + p%2;
             mlx90640->kta[p] = (eeData[64 + p] & 0x000E) >> 1;
             if (mlx90640->kta[p] > 3)
                 mlx90640->kta[p] = mlx90640->kta[p] - 8;
 
             mlx90640->kta[p] = mlx90640->kta[p] * (1 << ktaScale2);
-            mlx90640->kta[p] += KtaRC[ind];
-            mlx90640->kta[p] /= pow(2,(double)ktaScale1);
+			mlx90640->kta[p] = KtaRC[split] + mlx90640->kta[p];
+			mlx90640->kta[p] = mlx90640->kta[p] / pow(2, (double)ktaScale1);
         }
     }
 }
@@ -881,10 +879,10 @@ void ExtractKvPixelParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     {
         for (int j = 0; j < 32; j++)
         {
-            int p = 32 * i +j;
-			uint8_t ind = 2*(p/32 - (p/64)*2) + p%2;
-            mlx90640->kv[p]  = KvT[ind];
-            mlx90640->kv[p] /= pow(2, (double)kvScale);
+            int p = 32 * i + j;
+			uint8_t split = 2*(p/32 - (p/64)*2) + p%2;
+			mlx90640->kv[p] = KvT[split];
+			mlx90640->kv[p] = mlx90640->kv[p] / pow(2, (double)kvScale);
         }
     }
 }
@@ -902,7 +900,7 @@ void ExtractCPParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 	// offset subpage1
     offsetSP[1] = (eeData[58] & 0xFC00) >> 10;
     if (offsetSP[1] > 31)  offsetSP[1] = offsetSP[1] - 64;
-    offsetSP[1] += offsetSP[0]; 
+	offsetSP[1] = offsetSP[1] + offsetSP[0];
     
 	mlx90640->cpOffset[0] = offsetSP[0];
 	mlx90640->cpOffset[1] = offsetSP[1];
@@ -935,6 +933,7 @@ void ExtractCPParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     if (cpKv > 127) cpKv = cpKv - 256;
 
 	uint8_t kvScale = (eeData[56] & 0x0F00) >> 8;	// unsigned
+
     mlx90640->cpKv = cpKv / pow(2, (double)kvScale);
  }
 

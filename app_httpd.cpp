@@ -40,8 +40,8 @@ httpd_handle_t mlxthc_httpd = NULL;
 
 typedef struct
 {
-  httpd_req_t *req;
-  size_t len;
+    httpd_req_t *req;
+    size_t len;
 } jpg_chunking_t;
 
 #define PART_BOUNDARY "123456789000000000000987654321"
@@ -505,16 +505,16 @@ static esp_err_t control_handler(httpd_req_t *req)
   char *buf = NULL;
   if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-  // of the format param1=val1&param2=val2
-  if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
-	  httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
-  {
-    free(buf);
-    httpd_resp_send_404(req);
+	  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
+	  // of the format param1=val1&param2=val2
+	  if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
+		  httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
+	  {
+		free(buf);
+		httpd_resp_send_404(req);
   
-	return ESP_FAIL;
-  }
+		return ESP_FAIL;
+	  }
   
   free(buf);
 
@@ -597,7 +597,7 @@ static esp_err_t control_handler(httpd_req_t *req)
 
 static int print_reg(char *p, sensor_t *s, uint16_t reg, uint32_t mask)
 {
-  return sprintf(p, "\"0x%x\":%u,", reg, s->get_reg(s, reg, mask));
+    return sprintf(p, "\"0x%x\":%u,", reg, s->get_reg(s, reg, mask));
 }
 
 
@@ -703,7 +703,6 @@ static esp_err_t xclk_handler(httpd_req_t *req)
   log_i("Set XCLK: %d MHz", xclk);
 
   sensor_t *s = esp_camera_sensor_get();
-
   int res = s->set_xclk(s, LEDC_TIMER_0, xclk);
   
   if (res) return httpd_resp_send_500(req);
@@ -725,13 +724,13 @@ static esp_err_t reg_handler(httpd_req_t *req)
 
   // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
   // of the format param1=val1&param2=val2
-  if (httpd_query_key_value(buf, "reg", _reg, sizeof(_reg)) != ESP_OK ||
+  if (httpd_query_key_value(buf, "reg",  _reg,  sizeof(_reg))  != ESP_OK ||
 	  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK ||
-      httpd_query_key_value(buf, "val", _val, sizeof(_val)) != ESP_OK)
+      httpd_query_key_value(buf, "val",  _val,  sizeof(_val))  != ESP_OK)
   {
-    free(buf);
-    httpd_resp_send_404(req);
-    return ESP_FAIL;
+      free(buf);
+      httpd_resp_send_404(req);
+      return ESP_FAIL;
   }
   free(buf);
 
