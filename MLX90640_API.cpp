@@ -78,29 +78,24 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 {
     uint16_t controlRegister1;
     uint16_t statusRegister;
-    int error = 1;
+    int error;
 
 // --------------------------------------------------------------------------
-// Introduce logic for measuring how much time has passed since previous frame
+// Logic for measuring how much time has passed since previous frame
 // to be able to pause the task before the next frame becomes available
 
-	static int64_t last_sampleUS = 0;
-	if (!last_sampleUS) last_sampleUS = esp_timer_get_time();
+	static int64_t mlx_update_t1_usec = 0;
 
-	int64_t current_sampleUS  = esp_timer_get_time();
+	int64_t mlx_update_t2_usec  = esp_timer_get_time();
 
-	int64_t msFromPrevFrame = (current_sampleUS - last_sampleUS) >> 10;		// convert to MS dividing by 1024
+	int64_t msFromPrevFrame = (mlx_update_t2_usec - mlx_update_t1_usec) >> 10;		// convert to MS dividing by 1024
 	int64_t msToNextFrame   = msFrame_delay - msFromPrevFrame;
 
-	last_sampleUS = current_sampleUS;
-
 	// pause the task for more than 10 ms 
-	if (msToNextFrame > 10)
-	{
+	if (msToNextFrame > 10) {
 		log_i("Awaiting mlxFrame for %lld ms", msToNextFrame);
 		delay(msToNextFrame);
 	}
-//  ---------------------------------------------------------------------------
 	
 	// Busy wait for the frame ("data ready" flag)
 	uint16_t dataReady = 0;
@@ -111,7 +106,11 @@ int MLX90640_GetFrameData(uint16_t *frameData)
  
         dataReady = statusRegister & 0x0008;	// B3: New data available in ram
     }
+
+	mlx_update_t1_usec = esp_timer_get_time();
     
+//  ---------------------------------------------------------------------------
+		
 	// Read frame
 	error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
 	if (error != 0) return error;
@@ -133,7 +132,7 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 mlx_fb_t MLX90640_fb_get()
 {
 	float Emmisivity        = 0.95f;
-	float TambientReflected = 20.0f;
+	float TambientReflected = 20.0f;	// Celsius
 
 	mlx_fb_t fb = {};
 	
@@ -362,7 +361,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
     float       tr4  = pow((tr + 273.15), (double)4);
     float       taTr = tr4 - (tr4-ta4)/emissivity;
 
-	ESP_LOGD("MLX90640_CalculateTo", "Tdie=%3.1f, Vdd=%4.2", ta, vdd);
+	ESP_LOGD("Frame data", "Subpage %d: Tdie=%3.1f, Vdd=%4.2f", subPage, ta, vdd);
     
 	float alphaCorrR[4];
     alphaCorrR[0] = 1 / (1 + params->ksTo[0] * 40);

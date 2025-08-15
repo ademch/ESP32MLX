@@ -4,6 +4,7 @@
 #include "esp_heap_caps.h"
 #include <esp32-hal-log.h>
 #include <math.h>
+#include <float.h>
 
 template<typename T>
 constexpr const T& clamp(const T& v, const T& lo, const T& hi) {
@@ -35,7 +36,7 @@ bool MLXframe2bmp(float* src, uint16_t src_len, uint16_t width, uint16_t height,
 	bitmapH->fileoffset_to_pixelarray = BMP_HEADER_LEN + palette_size;
 	bitmapH->dibheadersize = 40;
 	bitmapH->width = width;
-	bitmapH->height = -height;//set negative for top to bottom
+	bitmapH->height = -height; //set negative for top to bottom
 	bitmapH->planes = 1;
 	bitmapH->bitsperpixel = bpp * 8;
 	bitmapH->compression = 0;
@@ -48,21 +49,63 @@ bool MLXframe2bmp(float* src, uint16_t src_len, uint16_t width, uint16_t height,
 	uint8_t* palette_buf = out_buf + BMP_HEADER_LEN;
 	uint8_t* pix_buf = palette_buf + palette_size;
 
-	float fValue;
-	uint8_t iValue;
-	//uint8_t gray = static_cast<uint8_t>(clamp((val - fMin) / fRange * 255.0f, 0.0f, 255.0f));
+//--Find min max--------------------------------------
+	float fMin =  FLT_MAX;
+	float fMax = -FLT_MAX;
+
+	for (int i = 0; i < pix_count; i++) {
+		if (src[i] < fMin) fMin = src[i];
+		if (src[i] > fMax) fMax = src[i];
+	}
+//----------------------------------------------------
+
 	for (int i = 0; i < pix_count; i++)
 	{
-		fValue = *src++;
-		iValue = round(fValue);
+		float fValue = *src++;
 
-		*pix_buf++ = iValue;
-		*pix_buf++ = iValue;
-		*pix_buf++ = iValue;
+		RGB rgbPixel = ironbow(fValue, fMin, fMax);
+
+		*pix_buf++ = rgbPixel.b;
+		*pix_buf++ = rgbPixel.g;
+		*pix_buf++ = rgbPixel.r;
 	}
 
 	*out = out_buf;
 	*out_len = out_size;
 
 	return true;
+}
+
+
+// Simple Ironbow-like colormap
+RGB ironbow(float value, float minVal, float maxVal)
+{
+	float t = (value - minVal) / (maxVal - minVal);
+
+	// Map through segments: blue -> purple -> red -> orange -> yellow -> white
+	float r = 0, g = 0, b = 0;
+
+	if (t < 0.25f) { // Blue to Purple
+		r = 128.0f * (t / 0.25f);
+		g = 0;
+		b = 255.0f;
+	}
+	else if (t < 0.5f) { // Purple to Red
+		r = 128.0f + 127.0f * ((t - 0.25f) / 0.25f);
+		g = 0;
+		b = 255.0f - 255.0f * ((t - 0.25f) / 0.25f);
+	}
+	else if (t < 0.75f) { // Red to Orange
+		r = 255.0f;
+		g = 128.0f * ((t - 0.5f) / 0.25f);
+		b = 0;
+	}
+	else { // Orange to Yellow/White
+		r = 255.0f;
+		g = 128.0f + 127.0f * ((t - 0.75f) / 0.25f);
+		b = 127.0f * ((t - 0.75f) / 0.25f);
+	}
+
+	// truncate
+	return { static_cast<uint8_t>(r), static_cast<uint8_t>(g), static_cast<uint8_t>(b) };
 }

@@ -41,5 +41,13 @@ typedef struct {
 bool MLXframe2bmp(float* src, uint16_t src_len,
 	              uint16_t width, uint16_t height, uint8_t** out, uint16_t* out_len);
 
+struct RGB {
+	uint8_t r;
+	uint8_t g;
+	uint8_t b;
+};
+
+RGB ironbow(float value, float minVal, float maxVal);
+
 
 #endif

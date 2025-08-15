@@ -455,7 +455,7 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 
 			uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
 
-			log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(fb.len) >> 10,
+			log_i("BMP: %u b %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(fb.len),
 				  (uint32_t)frame_time,
 				  1000.0 / (uint32_t)frame_time,
 				  avg_frame_time,
