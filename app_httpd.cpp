@@ -22,6 +22,8 @@
 #include "board_config.h"
 #include "MLX90640_API.h"
 
+#include "SPIFFS.h"
+
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 	#include "esp32-hal-log.h"
 #endif
@@ -823,63 +825,127 @@ static esp_err_t pll_handler(httpd_req_t *req)
   return httpd_resp_send(req, NULL, 0);
 }
 
+// POST /uploadserver
+static esp_err_t uploadserver_handler(httpd_req_t *req)
+{
+	char filepath[128] = "/index.html";  // target file
+	File fd = SPIFFS.open(filepath, "w");
+	if (!fd) {
+		log_e("Failed to open file for writing");
+		httpd_resp_send_500(req);
+		return ESP_FAIL;
+	}
+
+	int remaining = req->content_len;
+	log_i("Receiving file, size: %d", remaining);
+
+	char buf[512];
+	int iRetries = 0;
+	while (remaining > 0) {
+		int nRead = httpd_req_recv(req, buf, sizeof(buf) );
+		if (nRead <= 0)
+		{
+			if (nRead == HTTPD_SOCK_ERR_TIMEOUT) {
+				if (iRetries++ < 3) continue; // retry
+			}
+
+			log_e("Receive error");
+			fd.close();
+			httpd_resp_send_500(req);
+
+			return ESP_FAIL;
+		}
+
+		fd.write((uint8_t *)buf, nRead);
+
+		remaining -= nRead;
+	}
+
+	fd.close();
+
+	log_i("File stored as %s", filepath);
+
+    return httpd_resp_sendstr(req, "Upload successful");
+}
+
+
 // GET /resolution
 static esp_err_t win_handler(httpd_req_t *req)
 {
-  char *buf = NULL;
-  if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
+    char *buf = NULL;
+    if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-	  int startX = parse_get_var(buf, "sx", 0);
-	  int startY = parse_get_var(buf, "sy", 0);
-	  int endX = parse_get_var(buf, "ex", 0);
-	  int endY = parse_get_var(buf, "ey", 0);
-	  int offsetX = parse_get_var(buf, "offx", 0);
-	  int offsetY = parse_get_var(buf, "offy", 0);
-	  int totalX = parse_get_var(buf, "tx", 0);
-	  int totalY = parse_get_var(buf, "ty", 0);  // codespell:ignore totaly
-	  int outputX = parse_get_var(buf, "ox", 0);
-	  int outputY = parse_get_var(buf, "oy", 0);
-	  bool scale = parse_get_var(buf, "scale", 0) == 1;
-	  bool binning = parse_get_var(buf, "binning", 0) == 1;
+	int startX = parse_get_var(buf, "sx", 0);
+	int offsetX = parse_get_var(buf, "offx", 0);
+	int offsetY = parse_get_var(buf, "offy", 0);
+	int totalX = parse_get_var(buf, "tx", 0);
+	int totalY = parse_get_var(buf, "ty", 0);  // codespell:ignore totaly
+	int outputX = parse_get_var(buf, "ox", 0);
+	int outputY = parse_get_var(buf, "oy", 0);
 
-  free(buf);
+    free(buf);
 
-  log_i("Set Window: Start: %d %d, End: %d %d, Offset: %d %d, Total: %d %d, Output: %d %d, Scale: %u, Binning: %u", startX, startY, endX, endY, offsetX, offsetY,
-         totalX, totalY, outputX, outputY, scale, binning );
+    log_i("Set Window: Resolution: %d, Start: %d %d, End: %d %d, Output: %d %d",
+	      startX, offsetX, offsetY, totalX, totalY, outputX, outputY);
 
-  sensor_t *s = esp_camera_sensor_get();
-  int res = s->set_res_raw(s, startX, startY,
-							endX, endY,
-							offsetX, offsetY,
-							totalX, totalY,
-							outputX, outputY,
-							scale, binning);  // codespell:ignore totaly
-  if (res) return httpd_resp_send_500(req);
+    sensor_t *s = esp_camera_sensor_get();
+    int res = s->set_res_raw(s,
+	  					     startX, 0,			// startX encodes mode
+						     0, 0,				// ignored
+						     offsetX, offsetY,	// start column of a window described by mode (see ratio table in ov2640_ratio.h)
+						     totalX, totalY,	// end column of a window described by mode (see ratio table in ov2640_ratio.h)
+						     outputX, outputY,	// final resolution asked
+						     false, false);		// ignored
+ 
+    // internally calls
+	// set_window(ov2640_sensor_mode_t)startX, offsetX, offsetY, totalX, totalY, outputX, outputY);
 
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    if (res) return httpd_resp_send_500(req);
 
-  return httpd_resp_send(req, NULL, 0);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+
+    return httpd_resp_send(req, NULL, 0);
 }
 
 // GET /
 static esp_err_t index_handler(httpd_req_t *req)
 {
-  sensor_t *s = esp_camera_sensor_get();
-  if (s == NULL)
-  {
-	  log_e("Camera sensor not found");
-	  return httpd_resp_send_500(req);
-  }
+	httpd_resp_set_hdr(req, "Cache-Control", "no-store");
 
-  httpd_resp_set_type(req, "text/html");
-  //httpd_resp_set_hdr(req, "Content-Encoding", "gzip");
+	// Open file from SPIFFS
+	const char* path = "/index.html"; // default file
+	File file = SPIFFS.open(path, "r");
+	
+	// if file does not exist
+	if (!file.available()) {
+		log_e("Failed to open file %s, sending default index.html", path);
+		file.close();
+		return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz) - 1);
+	}
 
-  if	  (s->id.PID == OV3660_PID)
-      return httpd_resp_send(req, (const char *)index_ov3660_html_gz, index_ov3660_html_gz_len);
-  else if (s->id.PID == OV5640_PID)
-      return httpd_resp_send(req, (const char *)index_ov5640_html_gz, index_ov5640_html_gz_len);
-  else
-      return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz)-1);
+	// if file corrupted
+	if (file.size() < 100) {
+		log_e("File %s is corrupted, sending default index.html", path);
+		file.close();
+		return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz) - 1);
+	}
+
+	log_i("GET / request received, sending index.html from SPIFFS");
+
+	// Stream file in chunks to client
+	char buf[512];
+	while (file.available()) {
+		size_t len = file.readBytes(buf, sizeof(buf));
+		if (httpd_resp_send_chunk(req, buf, len) != ESP_OK) {
+			file.close();
+			return ESP_FAIL;
+		}
+	}
+
+	file.close();
+
+	// Send zero-length chunk to indicate end
+	return httpd_resp_send_chunk(req, NULL, 0);
 }
 
 void startControlAndStreamServers()
@@ -1030,6 +1096,19 @@ void startControlAndStreamServers()
 		#endif
 	};
 
+	httpd_uri_t ctrl_uploadserver_uri = {
+		.uri = "/uploadserver",
+		.method = HTTP_POST,
+		.handler = uploadserver_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
 	httpd_uri_t stream2640_uri = {
 		.uri = "/stream",
 		.method = HTTP_GET,
@@ -1070,6 +1149,8 @@ void startControlAndStreamServers()
         httpd_register_uri_handler(control_httpd, &ctrl_greg_uri);
         httpd_register_uri_handler(control_httpd, &ctrl_pll_uri);
         httpd_register_uri_handler(control_httpd, &ctrl_win_uri);
+
+		httpd_register_uri_handler(control_httpd, &ctrl_uploadserver_uri);
 
 		httpd_register_uri_handler(control_httpd, &capture90640_uri);
     }

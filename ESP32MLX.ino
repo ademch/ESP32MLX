@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include "MLX90640_API.h"
 #include "MLX90640_I2C_Driver.h"
+#include "SPIFFS.h"
 
 // Select camera model in board_config.h
 #include "board_config.h"
@@ -89,7 +90,7 @@ void setup() {
 	Serial.print("MLX90640 thermal camera init...");
 
 		// Initialize I2C with custom pins and frequency (default 100kHz)
-		Wire.begin(14, 15, 400000);				// SDA, SCL, frequency in Hz
+		Wire.begin(I2C_SDA_GPIO_NUM, I2C_SCL_GPIO_NUM, 400000);	// SDA, SCL, frequency in Hz
 
 		const uint8_t MLX90640_address = 0x33;  // Default 7-bit unshifted address of the MLX90640
 
@@ -102,7 +103,7 @@ void setup() {
 
 		MLX90640_Init(MLX90640_address);
 
-		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_2HZ);
+		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
 
 	Serial.println("success");
 
@@ -130,6 +131,19 @@ void setup() {
 		Serial.println("success");
 	}
 
+	Serial.print("Mounting SPIFFS...");
+
+	// Mount SPIFFS
+	if (!SPIFFS.begin(true)) { // true = format if failed
+		Serial.println("Failed to mount SPIFFS");
+		return;
+	}
+
+	Serial.println("SPIFFS mounted successfully");
+
+	// Get total and used bytes
+	Serial.printf("* SPIFFS partition: %u kbytes\n", SPIFFS.totalBytes() >> 10);
+	Serial.printf("* SPIFFS used: %u kbytes\n", SPIFFS.usedBytes() >> 10);
 
   Serial.println("Launching http servers...");
 

@@ -28,6 +28,12 @@
     <Filter Include="Header Files\External\HTTP_SERVER">
       <UniqueIdentifier>{e40f953a-d274-4b05-bc2f-2fd44af9e363}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\External\FS">
+      <UniqueIdentifier>{fce39161-c530-4ef7-ba82-49129502eb2f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\External\CAMERA\ImageConverion">
+      <UniqueIdentifier>{79b11a5c-7c03-43b6-9b54-c245378743a6}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app_httpd.cpp">
@@ -57,14 +63,20 @@
     <ClCompile Include="MLX90640_I2C_Driver.cpp">
       <Filter>Header Files\MLX</Filter>
     </ClCompile>
-    <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClCompile>
-    <ClCompile Include="esp32-camera-master\conversions\to_bmp.c">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClCompile>
     <ClCompile Include="MLX90640_frame2bmp.cpp">
       <Filter>Header Files\MLX</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\FS\src\FS.cpp">
+      <Filter>Header Files\External\FS</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\SPIFFS\src\SPIFFS.cpp">
+      <Filter>Header Files\External\FS</Filter>
+    </ClCompile>
+    <ClCompile Include="esp32-camera-master\conversions\to_bmp.c">
+      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
+    </ClCompile>
+    <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp">
+      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -101,9 +113,6 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\esp_camera.h">
       <Filter>Header Files\External\CAMERA</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32s3\include\espressif__esp32-camera\driver\include\sensor.h">
       <Filter>Header Files\External\CAMERA</Filter>
     </ClInclude>
@@ -127,6 +136,24 @@
     </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\cores\esp32\esp32-hal-log.h">
       <Filter>Header Files\External</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_regs.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_settings.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\FS\src\FS.h">
+      <Filter>Header Files\External\FS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\SPIFFS\src\SPIFFS.h">
+      <Filter>Header Files\External\FS</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
+      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -24,6 +24,7 @@
 	#define MLX90640_ramSIZEuser        834	// contains two additional bytes
 	#define MLX90640_pixelCOUNT         768
 
+	// Number of subpages per second
 	#define MLX90640_REFRESH_RATE_05HZ	0
 	#define MLX90640_REFRESH_RATE_1HZ	1
 	#define MLX90640_REFRESH_RATE_2HZ	2	// deafult

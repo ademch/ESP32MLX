@@ -35,8 +35,8 @@ bool MLXframe2bmp(float* src, uint16_t src_len, uint16_t width, uint16_t height,
 	bitmapH->filesize = out_size;
 	bitmapH->fileoffset_to_pixelarray = BMP_HEADER_LEN + palette_size;
 	bitmapH->dibheadersize = 40;
-	bitmapH->width = width;
-	bitmapH->height = -height; //set negative for top to bottom
+	bitmapH->width  = width;
+	bitmapH->height = height;
 	bitmapH->planes = 1;
 	bitmapH->bitsperpixel = bpp * 8;
 	bitmapH->compression = 0;
@@ -85,22 +85,22 @@ RGB ironbow(float value, float minVal, float maxVal)
 	// Map through segments: blue -> purple -> red -> orange -> yellow -> white
 	float r = 0, g = 0, b = 0;
 
-	if (t < 0.25f) { // Blue to Purple
+	if (t < 0.25f) {		// Blue to Purple
 		r = 128.0f * (t / 0.25f);
 		g = 0;
 		b = 255.0f;
 	}
-	else if (t < 0.5f) { // Purple to Red
+	else if (t < 0.5f) {	// Purple to Red
 		r = 128.0f + 127.0f * ((t - 0.25f) / 0.25f);
 		g = 0;
 		b = 255.0f - 255.0f * ((t - 0.25f) / 0.25f);
 	}
-	else if (t < 0.75f) { // Red to Orange
+	else if (t < 0.75f) {	// Red to Orange
 		r = 255.0f;
 		g = 128.0f * ((t - 0.5f) / 0.25f);
 		b = 0;
 	}
-	else { // Orange to Yellow/White
+	else {					// Orange to Yellow/White
 		r = 255.0f;
 		g = 128.0f + 127.0f * ((t - 0.75f) / 0.25f);
 		b = 127.0f * ((t - 0.75f) / 0.25f);
