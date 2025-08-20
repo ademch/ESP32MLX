@@ -35,9 +35,9 @@
 	bool isStreaming = false;
 #endif
 
-httpd_handle_t stream_httpd = NULL;
+httpd_handle_t stream_httpd  = NULL;
 httpd_handle_t control_httpd = NULL;
-httpd_handle_t mlxthc_httpd = NULL;
+httpd_handle_t mlxthc_httpd  = NULL;
 
 typedef struct
 {
@@ -300,8 +300,8 @@ static esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 static esp_err_t stream2640_handler(httpd_req_t *req)
 {
     struct timeval _timestamp;
-    size_t _jpg_buf_len = 0;
-    uint8_t *_jpg_buf = NULL;
+    size_t buffer_jpg_len = 0;
+    uint8_t *buffer_jpg = NULL;
 
     #if ARDUHAL_LOG_LEVEL >= ARDUHAL_LOG_LEVEL_INFO
         static int64_t last_frame = 0;
@@ -313,7 +313,6 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
     if (res != ESP_OK) return res;
 
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    httpd_resp_set_hdr(req, "X-Framerate", "60");
 
     #if defined(LED_GPIO_NUM)
         isStreaming = true;
@@ -335,47 +334,52 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
     
         if (fb->format != PIXFORMAT_JPEG)
 	    {
-            bool jpeg_converted = frame2jpg(fb, 80, &_jpg_buf, &_jpg_buf_len);
+            bool jpeg_converted = frame2jpg(fb, 80, &buffer_jpg, &buffer_jpg_len);
     
             esp_camera_fb_return(fb);
             fb = NULL;
     
-            if (!jpeg_converted)
-	  	    {
+            if (!jpeg_converted) {
                 log_e("JPEG compression failed");
                 res = ESP_FAIL;
             }
         }
 	    else {
-	  	    _jpg_buf = fb->buf;
-	  	    _jpg_buf_len = fb->len;
+	  	    buffer_jpg     = fb->buf;
+	  	    buffer_jpg_len = fb->len;
         }
     
-        if (res == ESP_OK)
+        // --boundary
+		if (res == ESP_OK)
             res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
     
         if (res == ESP_OK)
 	    {
-	  	    char *part_buf[128];
-    
-	  	    size_t hlen = snprintf((char *)part_buf, 128,
-									_STREAM_JPG_PART, _jpg_buf_len, _timestamp.tv_sec, _timestamp.tv_usec);
-	  	    res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+	  	    char bufferHeader[128];
+	  	    size_t hlen = snprintf(bufferHeader, 128,
+								   _STREAM_JPG_PART, buffer_jpg_len, _timestamp.tv_sec, _timestamp.tv_usec);
+	  	    
+			// Content-Type: type
+			// Content-Length: len
+			// X-Timestamp:
+			// new line
+			res = httpd_resp_send_chunk(req, bufferHeader, hlen);
         }
     
+		// Data
         if (res == ESP_OK)
-            res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
+            res = httpd_resp_send_chunk(req, (const char *)buffer_jpg, buffer_jpg_len);
     
         if (fb)
 	    {
 	  	    esp_camera_fb_return(fb);
-	  	    fb = NULL;
-	  	    _jpg_buf = NULL;
+	  	    fb		   = NULL;
+	  	    buffer_jpg = NULL;	// pointer to fb internal structure
         }
-	    else if (_jpg_buf)
+	    else if (buffer_jpg)
 	    {
-	  	    free(_jpg_buf);
-	  	    _jpg_buf = NULL;
+	  	    free(buffer_jpg);
+	  	    buffer_jpg = NULL;
         }
     
         if (res != ESP_OK) {
@@ -390,7 +394,7 @@ static esp_err_t stream2640_handler(httpd_req_t *req)
     
 			uint32_t avg_frame_time = RunningAverage_run(&runningAverage, frame_time);
     
-	  		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(_jpg_buf_len) >> 10,
+	  		log_i("MJPG: %u kb %ums (%.1ffps), AVG: %ums (%.1ffps)", (uint32_t)(buffer_jpg_len) >> 10,
 	  			  (uint32_t)frame_time,
 	  			  1000.0 / (uint32_t)frame_time,
 	  			  avg_frame_time,
@@ -422,7 +426,6 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 	if (res != ESP_OK) return res;
 
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-	httpd_resp_set_hdr(req, "X-Framerate", "60");
 
 	mlx_fb_t fb = {};
 	while (true)
@@ -432,15 +435,15 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 			res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
 			if (res == ESP_OK)
 			{
-				char *part_buf[128];
+				char bufferHeader[128];
+				size_t hlen = snprintf(bufferHeader, 128,
+									   _STREAM_BMP_PART, fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 
-				size_t hlen = snprintf((char *)part_buf, 128,
-										_STREAM_BMP_PART, fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
-				res = httpd_resp_send_chunk(req, (const char *)part_buf, hlen);
+				res = httpd_resp_send_chunk(req, bufferHeader, hlen);
 			}
 
 			if (res == ESP_OK)
-				res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
+				res = httpd_resp_send_chunk(req, fb.buf, fb.len);
 
 		MLX90640_fb_return(fb);
 

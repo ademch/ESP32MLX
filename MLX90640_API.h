@@ -27,7 +27,7 @@
 	// Number of subpages per second
 	#define MLX90640_REFRESH_RATE_05HZ	0
 	#define MLX90640_REFRESH_RATE_1HZ	1
-	#define MLX90640_REFRESH_RATE_2HZ	2	// deafult
+	#define MLX90640_REFRESH_RATE_2HZ	2	// default
 	#define MLX90640_REFRESH_RATE_4HZ	3
 	#define MLX90640_REFRESH_RATE_8HZ	4
 	#define MLX90640_REFRESH_RATE_16HZ	5
@@ -95,6 +95,7 @@
     float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params);
     
 	int  MLX90640_GetFrameData(uint16_t *frameData);
+	
 	void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
     void MLX90640_CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
     
