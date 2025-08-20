@@ -78,6 +78,9 @@
     <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp">
       <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
     </ClCompile>
+    <ClCompile Include="httpd_firmware.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board_config.h">
@@ -154,6 +157,9 @@
     </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
       <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
+    </ClInclude>
+    <ClInclude Include="httpd_firmware.h">
+      <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

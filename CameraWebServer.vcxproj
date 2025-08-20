@@ -120,6 +120,7 @@
     <ClCompile Include="esp32-camera-master\driver\sensor.c" />
     <ClCompile Include="esp32-camera-master\sensors\ov2640.c" />
     <ClCompile Include="esp32-camera-master\target\esp32\ll_cam.c" />
+    <ClCompile Include="httpd_firmware.cpp" />
     <ClCompile Include="MLX90640_API.cpp" />
     <ClCompile Include="MLX90640_frame2bmp.cpp" />
     <ClCompile Include="MLX90640_I2C_Driver.cpp" />
@@ -145,6 +146,7 @@
     <ClInclude Include="board_config.h" />
     <ClInclude Include="camera_index.h" />
     <ClInclude Include="camera_pins.h" />
+    <ClInclude Include="httpd_firmware.h" />
     <ClInclude Include="MLX90640_API.h" />
     <ClInclude Include="MLX90640_frame2bmp.h" />
     <ClInclude Include="MLX90640_I2C_Driver.h" />

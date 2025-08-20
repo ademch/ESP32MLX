@@ -18,11 +18,10 @@
 #include "fb_gfx.h"
 #include "esp32-hal-ledc.h"
 #include "sdkconfig.h"
-#include "camera_index.h"
 #include "board_config.h"
 #include "MLX90640_API.h"
+#include "httpd_firmware.h"
 
-#include "SPIFFS.h"
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
 	#include "esp32-hal-log.h"
@@ -825,48 +824,6 @@ static esp_err_t pll_handler(httpd_req_t *req)
   return httpd_resp_send(req, NULL, 0);
 }
 
-// POST /uploadserver
-static esp_err_t uploadserver_handler(httpd_req_t *req)
-{
-	char filepath[128] = "/index.html";  // target file
-	File fd = SPIFFS.open(filepath, "w");
-	if (!fd) {
-		log_e("Failed to open file for writing");
-		httpd_resp_send_500(req);
-		return ESP_FAIL;
-	}
-
-	int remaining = req->content_len;
-	log_i("Receiving file, size: %d", remaining);
-
-	char buf[512];
-	int iRetries = 0;
-	while (remaining > 0) {
-		int nRead = httpd_req_recv(req, buf, sizeof(buf) );
-		if (nRead <= 0)
-		{
-			if (nRead == HTTPD_SOCK_ERR_TIMEOUT) {
-				if (iRetries++ < 3) continue; // retry
-			}
-
-			log_e("Receive error");
-			fd.close();
-			httpd_resp_send_500(req);
-
-			return ESP_FAIL;
-		}
-
-		fd.write((uint8_t *)buf, nRead);
-
-		remaining -= nRead;
-	}
-
-	fd.close();
-
-	log_i("File stored as %s", filepath);
-
-    return httpd_resp_sendstr(req, "Upload successful");
-}
 
 
 // GET /resolution
@@ -905,47 +862,6 @@ static esp_err_t win_handler(httpd_req_t *req)
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
     return httpd_resp_send(req, NULL, 0);
-}
-
-// GET /
-static esp_err_t index_handler(httpd_req_t *req)
-{
-	httpd_resp_set_hdr(req, "Cache-Control", "no-store");
-
-	// Open file from SPIFFS
-	const char* path = "/index.html"; // default file
-	File file = SPIFFS.open(path, "r");
-	
-	// if file does not exist
-	if (!file.available()) {
-		log_e("Failed to open file %s, sending default index.html", path);
-		file.close();
-		return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz) - 1);
-	}
-
-	// if file corrupted
-	if (file.size() < 100) {
-		log_e("File %s is corrupted, sending default index.html", path);
-		file.close();
-		return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz) - 1);
-	}
-
-	log_i("GET / request received, sending index.html from SPIFFS");
-
-	// Stream file in chunks to client
-	char buf[512];
-	while (file.available()) {
-		size_t len = file.readBytes(buf, sizeof(buf));
-		if (httpd_resp_send_chunk(req, buf, len) != ESP_OK) {
-			file.close();
-			return ESP_FAIL;
-		}
-	}
-
-	file.close();
-
-	// Send zero-length chunk to indicate end
-	return httpd_resp_send_chunk(req, NULL, 0);
 }
 
 void startControlAndStreamServers()

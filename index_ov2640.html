@@ -799,10 +799,7 @@
                         <section class="toggle-section">
 
                             <div class="group-grey-box">
-                                <div class="input-group">
-                                    <label>http server</label>
-                                    <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 180px;">
-                                </div>
+                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 300px;">
                             </div>
                             <button id="upload-firmware-btn">Update...</button>
                         </section>
@@ -1142,7 +1139,7 @@
                         const response = await fetch(`${baseHost}/uploadserver`, {
                                                         method: "POST",
                                                         headers: {
-                                                            "X-Client-Date": new Date().toUTCString()  // e.g. "Wed, 20 Aug 2025 02:45:32 GMT"
+                                                            "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
                                                         },
 				                                        body: file
 				                                   });
