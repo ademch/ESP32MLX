@@ -79,6 +79,7 @@ void setup() {
 		// drop down frame size for higher initial frame rate
 		sensor_t *s = esp_camera_sensor_get();
 		s->set_framesize(s, FRAMESIZE_VGA);
+		s->set_hmirror(s, 1);
 
 		// Setup LED FLash if LED pin is defined in camera_pins.h
 		#if defined(LED_GPIO_NUM)

@@ -360,7 +360,7 @@
                 height: 20px;
                 margin: 1px;
                 outline: 0;
-                border-radius: 5px
+                border-radius: 1px
             }
 
             .inline-button {
@@ -426,17 +426,18 @@
                                 <div class="input-group" id="opacity-group">
                                     <label for="opacity">Thermap Opacity</label>
                                     <div class="range-min">0%</div>
-                                    <input type="range" id="opacity" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
+                                    <input type="range" id="opacity" min="0" max="100" value="40" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
                                     <div class="range-max">100%</div>
                                 </div>
                             </div>
                         </section>
 
-
                         <hr style="width:100%">
-                        <label for="nav-toggle-params" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 params</label>
-                        <input type="checkbox" id="nav-toggle-params" class="hidden toggle-section-button" checked="checked">
+
+                        <label for="nav-toggle-win" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 resolution 'n crop</label>
+                        <input type="checkbox" id="nav-toggle-win" class="hidden toggle-section-button" checked="checked">
                         <section class="toggle-section">
+
                             <div class="group-grey-box">
                                 <div class="input-group" id="framesize-group">
                                     <label for="framesize">Resolution</label>
@@ -460,6 +461,7 @@
                                         <option value="0">96x96</option>
                                     </select>
                                 </div>
+                                <br>
                                 <div class="input-group" id="quality-group">
                                     <label for="quality">JPEG Quality</label>
                                     <div class="range-min">4</div>
@@ -468,6 +470,52 @@
                                 </div>
                             </div>
 
+                            <div class="group-grey-box">
+                                <div class="input-group">
+                                    <label for="start-x">Raw Resolution</label>
+                                    <select id="start-x">
+                                        <option value="2">CIF (400x296)</option>
+                                        <option value="1">SVGA (800x600)</option>
+                                        <option value="0" selected="selected">UXGA (1600x1200)</option>
+                                    </select>
+                                </div>
+                                <br>
+
+                                <div class="input-group" id="set-offset-res-group">
+                                    <label for="offset-x">Window Start</label>
+                                    <div class="text">
+                                        X:<input id="offset-x" type="text" minlength="1" maxlength="3" size="5" value="150">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="offset-y" type="text" minlength="1" maxlength="3" size="5" value="70">
+                                    </div>
+                                </div>
+                                <div class="input-group" id="set-total-res-group">
+                                    <label for="total-x">Window End</label>
+                                    <div class="text">
+                                        X:<input id="total-x" type="text" minlength="1" maxlength="4" size="5" value="1350">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="total-y" type="text" minlength="1" maxlength="4" size="5" value="970">
+                                    </div>
+                                </div>
+                                <div class="input-group" id="set-output-res-group">
+                                    <label for="output-x">Output Size</label>
+                                    <div class="text">
+                                        X:<input id="output-x" type="text" minlength="1" maxlength="4" size="5" value="1200">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="output-y" type="text" minlength="1" maxlength="4" size="5" value="900">
+                                    </div>
+                                </div>
+                                <button id="set-resolution">Set Resolution</button>
+                            </div>
+                        </section>
+
+                        <hr style="width:100%">
+                        <label for="nav-toggle-params" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 params</label>
+                        <input type="checkbox" id="nav-toggle-params" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
                             <div class="group-grey-box">
                                 <div class="input-group" id="brightness-group">
                                     <label for="brightness">Brightness</label>
@@ -742,51 +790,6 @@
                                     <input id="2640pll4" type="text" minlength="1" maxlength="3" size="3" value="4" class="reg-action" reg="0xd3" offset="0" mask="0x7f">127
                                 </div>
                             </div>
-                        </section>
-
-                        <hr style="width:100%">
-
-                        <label for="nav-toggle-win" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 window</label>
-                        <input type="checkbox" id="nav-toggle-win" class="hidden toggle-section-button" checked="checked">
-                        <section class="toggle-section">
-
-                            <div class="input-group">
-                                <label for="start-x">Sensor Resolution</label>
-                                <select id="start-x">
-                                    <option value="2">CIF (400x296)</option>
-                                    <option value="1">SVGA (800x600)</option>
-                                    <option value="0" selected="selected">UXGA (1600x1200)</option>
-                                </select>
-                            </div>
-
-                            <div class="input-group" id="set-offset-res-group">
-                                <label for="offset-x">Start</label>
-                                <div class="text">
-                                    X:<input id="offset-x" type="text" minlength="1" maxlength="3" size="6" value="400">
-                                </div>
-                                <div class="text">
-                                    Y:<input id="offset-y" type="text" minlength="1" maxlength="3" size="6" value="300">
-                                </div>
-                            </div>
-                            <div class="input-group" id="set-total-res-group">
-                                <label for="total-x">End</label>
-                                <div class="text">
-                                    X:<input id="total-x" type="text" minlength="1" maxlength="4" size="6" value="800">
-                                </div>
-                                <div class="text">
-                                    Y:<input id="total-y" type="text" minlength="1" maxlength="4" size="6" value="600">
-                                </div>
-                            </div>
-                            <div class="input-group" id="set-output-res-group">
-                                <label for="output-x">Output Size</label>
-                                <div class="text">
-                                    X:<input id="output-x" type="text" minlength="1" maxlength="4" size="6" value="320">
-                                </div>
-                                <div class="text">
-                                    Y:<input id="output-y" type="text" minlength="1" maxlength="4" size="6" value="240">
-                                </div>
-                            </div>
-                            <button id="set-resolution">Set Resolution</button>
                         </section>
 
                         <hr style="width:100%">
@@ -1137,8 +1140,11 @@
                     try {
 	  	    		    // send raw binary directly
                         const response = await fetch(`${baseHost}/uploadserver`, {
-				                                      method: "POST",
-				                                      body: file
+                                                        method: "POST",
+                                                        headers: {
+                                                            "X-Client-Date": new Date().toUTCString()  // e.g. "Wed, 20 Aug 2025 02:45:32 GMT"
+                                                        },
+				                                        body: file
 				                                   });
                         if (!response.ok) throw new Error("Upload failed");
 

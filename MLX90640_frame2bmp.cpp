@@ -59,15 +59,19 @@ bool MLXframe2bmp(float* src, uint16_t src_len, uint16_t width, uint16_t height,
 	}
 //----------------------------------------------------
 
-	for (int i = 0; i < pix_count; i++)
-	{
-		float fValue = *src++;
 
-		RGB rgbPixel = ironbow(fValue, fMin, fMax);
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++)
+		{
+			int srcInd = y * width + (width-1 - x);   // mirror horizontally
+			float fValue = src[srcInd];
 
-		*pix_buf++ = rgbPixel.b;
-		*pix_buf++ = rgbPixel.g;
-		*pix_buf++ = rgbPixel.r;
+			RGB rgbPixel = ironbow(fValue, fMin, fMax);
+
+			*pix_buf++ = rgbPixel.b;
+			*pix_buf++ = rgbPixel.g;
+			*pix_buf++ = rgbPixel.r;
+		}
 	}
 
 	*out = out_buf;
