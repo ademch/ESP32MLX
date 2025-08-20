@@ -443,7 +443,7 @@ static esp_err_t stream90640_handler(httpd_req_t *req)
 			}
 
 			if (res == ESP_OK)
-				res = httpd_resp_send_chunk(req, fb.buf, fb.len);
+				res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
 
 		MLX90640_fb_return(fb);
 
