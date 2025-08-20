@@ -97,6 +97,7 @@
             section#CaptureButtons {
                 display: flex;
                 flex-wrap: nowrap;
+                flex-direction: column;
                 justify-content: space-between;
                 padding-bottom: 10px;
                 padding-top: 10px;
@@ -416,12 +417,7 @@
                         <section id="CaptureButtons">
                             <button id="get-still">Capture Image</button>
                             <button id="toggle-stream">Start Stream</button>
-                        </section>
 
-                        <hr style="width:100%">
-                        <label for="nav-toggle-mlx" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 params</label>
-                        <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
-                        <section class="toggle-section">
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
                                     <label for="opacity">Thermap Opacity</label>
@@ -430,6 +426,13 @@
                                     <div class="range-max">100%</div>
                                 </div>
                             </div>
+                        </section>
+
+                        <hr style="width:100%">
+                        <label for="nav-toggle-mlx" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 params</label>
+                        <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+
                         </section>
 
                         <hr style="width:100%">
@@ -487,7 +490,7 @@
                                         X:<input id="offset-x" type="text" minlength="1" maxlength="3" size="5" value="150">
                                     </div>
                                     <div class="text">
-                                        Y:<input id="offset-y" type="text" minlength="1" maxlength="3" size="5" value="70">
+                                        Y:<input id="offset-y" type="text" minlength="1" maxlength="3" size="5" value="90">
                                     </div>
                                 </div>
                                 <div class="input-group" id="set-total-res-group">
@@ -496,7 +499,7 @@
                                         X:<input id="total-x" type="text" minlength="1" maxlength="4" size="5" value="1350">
                                     </div>
                                     <div class="text">
-                                        Y:<input id="total-y" type="text" minlength="1" maxlength="4" size="5" value="970">
+                                        Y:<input id="total-y" type="text" minlength="1" maxlength="4" size="5" value="990">
                                     </div>
                                 </div>
                                 <div class="input-group" id="set-output-res-group">
@@ -903,27 +906,27 @@
 
 			  const setXclkButton = document.getElementById('set-xclk')
 			  setXclkButton.onclick = () => {
-				let xclk = parseInt(document.getElementById('xclk').value);
+				  let xclk = parseInt(document.getElementById('xclk').value);
 
-				setXclk(xclk, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
+				  setXclk(xclk, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
 				});
 			  }
 
 			  const setResButton = document.getElementById('set-resolution')
 			  setResButton.onclick = () => {
-				let start_x  = parseInt(document.getElementById('start-x').value);
-				let offset_x = parseInt(document.getElementById('offset-x').value);
-				let offset_y = parseInt(document.getElementById('offset-y').value);
-				let total_x  = parseInt(document.getElementById('total-x').value);
-				let total_y  = parseInt(document.getElementById('total-y').value);
-				let output_x = parseInt(document.getElementById('output-x').value);
-				let output_y = parseInt(document.getElementById('output-y').value);
-
-				setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
-                          function (code, txt) {
-                                if (code != 200) { alert('Error['+code+']: ' + txt);
-                              }
-				});
+				  let start_x  = parseInt(document.getElementById('start-x').value);
+				  let offset_x = parseInt(document.getElementById('offset-x').value);
+				  let offset_y = parseInt(document.getElementById('offset-y').value);
+				  let total_x  = parseInt(document.getElementById('total-x').value);
+				  let total_y  = parseInt(document.getElementById('total-y').value);
+				  let output_x = parseInt(document.getElementById('output-x').value);
+				  let output_y = parseInt(document.getElementById('output-y').value);
+                  
+				  setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
+                            function (code, txt) {
+                                  if (code != 200) { alert('Error['+code+']: ' + txt);
+                                }
+				  });
 			  }
 
 			  const setRegValue = (el) => {
