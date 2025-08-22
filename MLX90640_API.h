@@ -79,7 +79,7 @@
     } paramsMLX90640;
 
 	typedef struct {
-		uint8_t* buf;               /*!< Pointer to the pixel data */
+		void* buf;                  /*!< Pointer to the pixel data */
 		uint16_t len;               /*!< Length of the buffer in bytes */
 		uint16_t width;             /*!< Width of the buffer in pixels */
 		uint16_t height;            /*!< Height of the buffer in pixels */

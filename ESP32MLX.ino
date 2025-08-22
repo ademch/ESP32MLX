@@ -6,6 +6,8 @@
 #include "MLX90640_I2C_Driver.h"
 #include "SPIFFS.h"
 
+const char* strBuildTimestamp = __TIMESTAMP__;
+
 // Select camera model in board_config.h
 #include "board_config.h"
 
@@ -78,13 +80,20 @@ void setup() {
 
 		// drop down frame size for higher initial frame rate
 		sensor_t *s = esp_camera_sensor_get();
-		s->set_framesize(s, FRAMESIZE_VGA);
+		//s->set_framesize(s, FRAMESIZE_VGA);
 		s->set_hmirror(s, 1);
 
+		// crop to match thermal camera
+		s->set_res_raw(s,
+					   0, 0,			// startX encodes mode
+					   0, 0,			// ignored
+					   150, 90,			// start column of a window described by mode (see ratio table in ov2640_ratio.h)
+					   1350, 990,		// end column of a window described by mode (see ratio table in ov2640_ratio.h)
+					   1200, 900,		// final resolution asked
+					   false, false);	// ignored
+
 		// Setup LED FLash if LED pin is defined in camera_pins.h
-		#if defined(LED_GPIO_NUM)
-		  setupLedFlash();
-		#endif
+		ledcAttach(LED_GPIO_NUM, 5000, 8);	// pin, freq, resolution 8bit
 
 	Serial.println("success");
 

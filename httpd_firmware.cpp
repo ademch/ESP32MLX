@@ -1,11 +1,11 @@
 
 #include "httpd_firmware.h"
-#include "camera_index.h"
+#include "indexHTML.h"
 #include "esp_http_server.h"
 #include "SPIFFS.h"
 #include <time.h>
 
-const char* strBuildTimestamp = __TIMESTAMP__;
+extern const char* strBuildTimestamp;
 
 // GET /
 esp_err_t index_handler(httpd_req_t *req)

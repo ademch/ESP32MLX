@@ -74,7 +74,7 @@ bool MLXframe2bmp(float* src, uint16_t src_len, uint16_t width, uint16_t height,
 		}
 	}
 
-	*out = out_buf;
+	*out     = out_buf;
 	*out_len = out_size;
 
 	return true;

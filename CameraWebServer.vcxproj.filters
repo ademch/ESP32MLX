@@ -34,6 +34,9 @@
     <Filter Include="Header Files\External\CAMERA\ImageConverion">
       <UniqueIdentifier>{79b11a5c-7c03-43b6-9b54-c245378743a6}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\HTML">
+      <UniqueIdentifier>{b7e5da15-b194-44b3-b32c-0f9239532c84}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="app_httpd.cpp">
@@ -81,15 +84,12 @@
     <ClCompile Include="httpd_firmware.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="httpd_capture_stream.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="board_config.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera_index.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera_pins.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="__vm\.CameraWebServer.vsarduino.h">
@@ -161,13 +161,31 @@
     <ClInclude Include="httpd_firmware.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="indexHTML.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="pinsConfig.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="httpd_capture_stream.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="index_ov2640.html">
-      <Filter>Source Files</Filter>
-    </None>
     <None Include="ESP32MLX.ino">
       <Filter>Source Files</Filter>
+    </None>
+    <None Include="proto.html">
+      <Filter>Source Files\HTML</Filter>
+    </None>
+    <None Include="script.js">
+      <Filter>Source Files\HTML</Filter>
+    </None>
+    <None Include="scriptCaptureAndStream.js">
+      <Filter>Source Files\HTML</Filter>
+    </None>
+    <None Include="style.css">
+      <Filter>Source Files\HTML</Filter>
     </None>
   </ItemGroup>
 </Project>

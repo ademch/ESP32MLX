@@ -5,404 +5,405 @@
         <meta name="viewport" content="width=device-width,initial-scale=1">
         <title>ESP32 OV2640</title>
         <style>
-            body {
-                font-family: Arial,Helvetica,sans-serif;
-                background: #181818;    /* Page background color */
-                color: #1FEFEF;         /* Font color */
-                font-size: 14px
-            }
 
-            h2 {
-                font-size: 18px
-            }
 
-            section.flexContainer {
-                display: flex;
-            }
+body {
+    font-family: Arial,Helvetica,sans-serif;
+    background: #181818; /* Page background color */
+    color: #1FEFEF; /* Font color */
+    font-size: 14px
+}
 
-            #menu,section.flexContainer {
-                flex-direction: column
-            }
+h2 {
+    font-size: 18px
+}
 
-            #menu {
-                display: none;
-                flex-wrap: nowrap;
-                min-width: 340px;
-                background: #363636;
-                padding: 8px;
-                border-radius: 4px;
-                margin-top: -10px;
-                margin-right: 10px;
-            }
+section.flexContainer {
+    display: flex;
+}
 
-            #GeneralSettings {
-                display: flex;
-                flex-wrap: wrap;
-                align-items: stretch;
-                height: 90vh;
-            }
+#menu, section.flexContainer {
+    flex-direction: column
+}
 
-            figure {
-                padding: 0px;
-                margin: 0;
-                flex: 1;
-                -webkit-margin-before: 0;
-                margin-block-start: 0;
-                -webkit-margin-after: 0;
-                margin-block-end: 0;
-                -webkit-margin-start: 0;
-                margin-inline-start: 0;
-                -webkit-margin-end: 0;
-                margin-inline-end: 0
-            }
+#menu {
+    display: none;
+    flex-wrap: nowrap;
+    min-width: 340px;
+    background: #363636;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: -10px;
+    margin-right: 10px;
+}
 
-            figure img {
-                display: block;
-                width: 100%;
-                height: auto;
-                border-radius: 4px;
-            }
+#GeneralSettings {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    height: 90vh;
+}
 
-            /* set CSS at-rule*/
-            @media (min-width: 800px) and (orientation:landscape) {
-                #GeneralSettings {
-                    display: flex;
-                    flex-wrap: nowrap;
-                    align-items: stretch
-                }
+figure {
+    padding: 0px;
+    margin: 0;
+    flex: 1;
+    -webkit-margin-before: 0;
+    margin-block-start: 0;
+    -webkit-margin-after: 0;
+    margin-block-end: 0;
+    -webkit-margin-start: 0;
+    margin-inline-start: 0;
+    -webkit-margin-end: 0;
+    margin-inline-end: 0
+}
 
-                figure img {
-                    display: block;
-                    max-width: 100%;
-                    max-height: calc(100vh - 40px);
-                    width: 100%;
-                    height: auto
-                }
+    figure img {
+        display: block;
+        width: 100%;
+        height: auto;
+        border-radius: 4px;
+    }
 
-                figure {
-                    flex: 1;
-                    padding: 0 0 0 0px;
-                    margin: 0;
-                    -webkit-margin-before: 0;
-                    margin-block-start: 0;
-                    -webkit-margin-after: 0;
-                    margin-block-end: 0;
-                    -webkit-margin-start: 0;
-                    margin-inline-start: 0;
-                    -webkit-margin-end: 0;
-                    margin-inline-end: 0
-                }
-            }
+/* set CSS at-rule*/
+@media (min-width: 800px) and (orientation:landscape) {
+    #GeneralSettings {
+        display: flex;
+        flex-wrap: nowrap;
+        align-items: stretch
+    }
 
-            section#CaptureButtons {
-                display: flex;
-                flex-wrap: nowrap;
-                flex-direction: column;
-                justify-content: space-between;
-                padding-bottom: 10px;
-                padding-top: 10px;
-            }
+    figure img {
+        display: block;
+        max-width: 100%;
+        max-height: calc(100vh - 40px);
+        width: 100%;
+        height: auto
+    }
 
-            /* Menu header*/
-            #nav-toggle {
-                cursor: pointer;
-                display: block
-            }
+    figure {
+        flex: 1;
+        padding: 0 0 0 0px;
+        margin: 0;
+        -webkit-margin-before: 0;
+        margin-block-start: 0;
+        -webkit-margin-after: 0;
+        margin-block-end: 0;
+        -webkit-margin-start: 0;
+        margin-inline-start: 0;
+        -webkit-margin-end: 0;
+        margin-inline-end: 0
+    }
+}
 
-            #nav-toggle-cb {
-                outline: 0;
-                opacity: 0;
-                width: 0;
-                height: 0
-            }
+section#CaptureButtons {
+    display: flex;
+    flex-wrap: nowrap;
+    flex-direction: column;
+    justify-content: space-between;
+    padding-bottom: 10px;
+    padding-top: 10px;
+}
 
-            #nav-toggle-cb:checked+#menu {
-                display: flex
-            }
+/* Menu header*/
+#nav-toggle {
+    cursor: pointer;
+    display: block
+}
 
-            .input-group {
-                display: flex;
-                flex-wrap: nowrap;
-                line-height: 20px;
-                margin: 5px 0
-            }
+#nav-toggle-cb {
+    outline: 0;
+    opacity: 0;
+    width: 0;
+    height: 0
+}
 
-            .input-group>label {
-                display: inline-block;
-                padding-right: 10px;
-                min-width: 50%
-            }
+    #nav-toggle-cb:checked + #menu {
+        display: flex
+    }
 
-            .input-group input,.input-group select {
-                flex-grow: 1
-            }
+.input-group {
+    display: flex;
+    flex-wrap: nowrap;
+    line-height: 20px;
+    margin: 5px 0
+}
 
-            .range-max,.range-min {
-                display: inline-block;
-                padding: 0 5px
-            }
+    .input-group > label {
+        display: inline-block;
+        padding-right: 10px;
+        min-width: 50%
+    }
 
-            button, .button {
-                display: block;
-                margin: 5px;
-                padding: 0 12px;
-                border: 0;
-                line-height: 22px;
-                cursor: pointer;
-                color: #fff;
-                background: #ff3034;
-                border-radius: 5px;
-                font-size: 16px;
-                outline: 0
-            }
+    .input-group input, .input-group select {
+        flex-grow: 1
+    }
 
-            .save {
-                position: absolute;
-                right: 25px;
-                top: 0px;
-                height: 16px;
-                line-height: 16px;
-                padding: 0 4px;
-                text-decoration: none;
-                cursor: pointer
-            }
+.range-max, .range-min {
+    display: inline-block;
+    padding: 0 5px
+}
 
-            button:hover {
-                background: #ff494d
-            }
+button, .button {
+    display: block;
+    margin: 5px;
+    padding: 0 12px;
+    border: 0;
+    line-height: 22px;
+    cursor: pointer;
+    color: #fff;
+    background: #ff3034;
+    border-radius: 5px;
+    font-size: 16px;
+    outline: 0
+}
 
-            button:active {
-                background: #f21c21
-            }
+.save {
+    position: absolute;
+    right: 25px;
+    top: 0px;
+    height: 16px;
+    line-height: 16px;
+    padding: 0 4px;
+    text-decoration: none;
+    cursor: pointer
+}
 
-            button.disabled {
-                cursor: default;
-                background: #a0a0a0
-            }
+button:hover {
+    background: #ff494d
+}
 
-            /* Slider */
-            input[type=range] {
-                -webkit-appearance: none;
-                width: 100%;
-                height: 18px;
-                background: #363636;
-                cursor: pointer;
-                margin: 0
-            }
+button:active {
+    background: #f21c21
+}
 
-            input[type=range]:focus {
-                outline: 0
-            }
+button.disabled {
+    cursor: default;
+    background: #a0a0a0
+}
 
-            input[type=range]::-webkit-slider-runnable-track {
-                width: 100%;
-                height: 2px;
-                cursor: pointer;
-                background: #EFEFEF;
-                border-radius: 0;
-                border: 0 solid #EFEFEF
-            }
+/* Slider */
+input[type=range] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 18px;
+    background: #363636;
+    cursor: pointer;
+    margin: 0
+}
 
-            input[type=range]::-webkit-slider-thumb {
-                border: 1px solid rgba(0,0,30,0);
-                height: 16px;
-                width: 16px;
-                border-radius: 50px;
-                background: #ff3034;
-                cursor: pointer;
-                -webkit-appearance: none;
-                margin-top: -7px
-            }
+    input[type=range]:focus {
+        outline: 0
+    }
 
-            input[type=range]:focus::-webkit-slider-runnable-track {
-                background: #EFEFEF
-            }
+    input[type=range]::-webkit-slider-runnable-track {
+        width: 100%;
+        height: 2px;
+        cursor: pointer;
+        background: #EFEFEF;
+        border-radius: 0;
+        border: 0 solid #EFEFEF
+    }
 
-            input[type=range]::-moz-range-track {
-                width: 100%;
-                height: 2px;
-                cursor: pointer;
-                background: #EFEFEF;
-                border-radius: 0;
-                border: 0 solid #EFEFEF
-            }
+    input[type=range]::-webkit-slider-thumb {
+        border: 1px solid rgba(0,0,30,0);
+        height: 16px;
+        width: 16px;
+        border-radius: 50px;
+        background: #ff3034;
+        cursor: pointer;
+        -webkit-appearance: none;
+        margin-top: -7px
+    }
 
-            input[type=range]::-moz-range-thumb {
-                border: 1px solid rgba(0,0,30,0);
-                height: 16px;
-                width: 16px;
-                border-radius: 50px;
-                background: #ff3034;
-                cursor: pointer
-            }
+    input[type=range]:focus::-webkit-slider-runnable-track {
+        background: #EFEFEF
+    }
 
-            input[type=range]::-ms-track {
-                width: 100%;
-                height: 2px;
-                cursor: pointer;
-                background: 0 0;
-                border-color: transparent;
-                color: transparent
-            }
+    input[type=range]::-moz-range-track {
+        width: 100%;
+        height: 2px;
+        cursor: pointer;
+        background: #EFEFEF;
+        border-radius: 0;
+        border: 0 solid #EFEFEF
+    }
 
-            input[type=range]::-ms-fill-lower {
-                background: #EFEFEF;
-                border: 0 solid #EFEFEF;
-                border-radius: 0
-            }
+    input[type=range]::-moz-range-thumb {
+        border: 1px solid rgba(0,0,30,0);
+        height: 16px;
+        width: 16px;
+        border-radius: 50px;
+        background: #ff3034;
+        cursor: pointer
+    }
 
-            input[type=range]::-ms-fill-upper {
-                background: #EFEFEF;
-                border: 0 solid #EFEFEF;
-                border-radius: 0
-            }
+    input[type=range]::-ms-track {
+        width: 100%;
+        height: 2px;
+        cursor: pointer;
+        background: 0 0;
+        border-color: transparent;
+        color: transparent
+    }
 
-            input[type=range]::-ms-thumb {
-                border: 1px solid rgba(0,0,30,0);
-                height: 16px;
-                width: 16px;
-                border-radius: 50px;
-                background: #ff3034;
-                cursor: pointer;
-                height: 2px
-            }
+    input[type=range]::-ms-fill-lower {
+        background: #EFEFEF;
+        border: 0 solid #EFEFEF;
+        border-radius: 0
+    }
 
-            input[type=range]:focus::-ms-fill-lower {
-                background: #EFEFEF
-            }
+    input[type=range]::-ms-fill-upper {
+        background: #EFEFEF;
+        border: 0 solid #EFEFEF;
+        border-radius: 0
+    }
 
-            input[type=range]:focus::-ms-fill-upper {
-                background: #363636
-            }
+    input[type=range]::-ms-thumb {
+        border: 1px solid rgba(0,0,30,0);
+        height: 16px;
+        width: 16px;
+        border-radius: 50px;
+        background: #ff3034;
+        cursor: pointer;
+        height: 2px
+    }
 
-            .switch {
-                display: block;
-                position: relative;
-                line-height: 22px;
-                font-size: 16px;
-                height: 22px
-            }
+    input[type=range]:focus::-ms-fill-lower {
+        background: #EFEFEF
+    }
 
-            .switch input {
-                outline: 0;
-                opacity: 0;
-                width: 0;
-                height: 0
-            }
+    input[type=range]:focus::-ms-fill-upper {
+        background: #363636
+    }
 
-            .slider {
-                width: 50px;
-                height: 18px;
-                border-radius: 22px;
-                cursor: pointer;
-                background-color: grey
-            }
+.switch {
+    display: block;
+    position: relative;
+    line-height: 22px;
+    font-size: 16px;
+    height: 22px
+}
 
-            .slider,.slider:before {
-                display: inline-block;
-                transition: .4s
-            }
+    .switch input {
+        outline: 0;
+        opacity: 0;
+        width: 0;
+        height: 0
+    }
 
-            .slider:before {
-                position: relative;
-                content: "";
-                border-radius: 50%;
-                height: 13px;
-                width: 13px;
-                left: 4px;
-                top: 2px;
-                background-color: #fff
-            }
+.slider {
+    width: 50px;
+    height: 18px;
+    border-radius: 22px;
+    cursor: pointer;
+    background-color: grey
+}
 
-            input:checked+.slider {
-                background-color: #ff3034
-            }
+    .slider, .slider:before {
+        display: inline-block;
+        transition: .4s
+    }
 
-            input:checked+.slider:before {
-                -webkit-transform: translateX(26px);
-                transform: translateX(26px)
-            }
+        .slider:before {
+            position: relative;
+            content: "";
+            border-radius: 50%;
+            height: 13px;
+            width: 13px;
+            left: 4px;
+            top: 2px;
+            background-color: #fff
+        }
 
-            select {
-                border: 1px solid #363636;
-                font-size: 14px;
-                height: 20px;
-                outline: 0;
-                border-radius: 5px
-            }
+input:checked + .slider {
+    background-color: #ff3034
+}
 
-            /* div container that holds image related elements*/
-            .image-container {
-                position: relative;
-                min-width: 160px;
-            }
+    input:checked + .slider:before {
+        -webkit-transform: translateX(26px);
+        transform: translateX(26px)
+    }
 
-            .close {
-                position: absolute;
-                right: 5px;
-                top: 5px;
-                background: #ff3034;
-                width: 16px;
-                height: 16px;
-                border-radius: 100px;
-                color: #fff;
-                text-align: center;
-                line-height: 18px;
-                cursor: pointer
-            }
+select {
+    border: 1px solid #363636;
+    font-size: 14px;
+    height: 20px;
+    outline: 0;
+    border-radius: 5px
+}
 
-            .hidden {
-                display: none
-            }
+/* div container that holds image related elements*/
+.image-container {
+    position: relative;
+    min-width: 160px;
+}
 
-            input[type=text] {
-                border: 1px solid #363636;
-                font-size: 14px;
-                height: 20px;
-                margin: 1px;
-                outline: 0;
-                border-radius: 1px
-            }
+.close {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    background: #ff3034;
+    width: 16px;
+    height: 16px;
+    border-radius: 100px;
+    color: #fff;
+    text-align: center;
+    line-height: 18px;
+    cursor: pointer
+}
 
-            .inline-button {
-                line-height: 16px;
-                margin: 2px;
-                padding: 1px 4px 2px 4px;
-                min-width: 100px;
-            }
+.hidden {
+    display: none
+}
 
-            label.toggle-section-label {
-                cursor: pointer;
-                display: block;
-                margin-bottom: 16px;
-                font-weight: bold;
-            }
+input[type=text] {
+    border: 1px solid #363636;
+    font-size: 14px;
+    height: 20px;
+    margin: 1px;
+    outline: 0;
+    border-radius: 1px
+}
 
-            input.toggle-section-button {
-                outline: 0;
-                opacity: 0;
-                width: 0;
-                height: 0
-            }
+.inline-button {
+    line-height: 16px;
+    margin: 2px;
+    padding: 1px 4px 2px 4px;
+    min-width: 100px;
+}
 
-            input.toggle-section-button:checked+section.toggle-section {
-                display: none
-            }
+label.toggle-section-label {
+    cursor: pointer;
+    display: block;
+    margin-bottom: 16px;
+    font-weight: bold;
+}
 
-            .group-grey-box {
-                background-color: #202020; /* light grey */
-                padding: 10px;
-                border-radius: 6px; /* rounded corners */
-                margin-bottom: 10px; /* spacing from other elements */
-            }
+input.toggle-section-button {
+    outline: 0;
+    opacity: 0;
+    width: 0;
+    height: 0
+}
 
-            /* Left menu column */
-            #sidebar {
-                overflow-y: auto;
-                overflow-x: hidden;
-            }
+    input.toggle-section-button:checked + section.toggle-section {
+        display: none
+    }
 
-        </style>
+.group-grey-box {
+    background-color: #202020; /* light grey */
+    padding: 10px;
+    border-radius: 6px; /* rounded corners */
+    margin-bottom: 10px; /* spacing from other elements */
+}
+
+/* Left menu column */
+#sidebar {
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+</style>
     </head>
     <body>
         <section class="flexContainer">
@@ -431,9 +432,7 @@
                         <hr style="width:100%">
                         <label for="nav-toggle-mlx" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 params</label>
                         <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
-                        <section class="toggle-section">
-
-                        </section>
+                        <section class="toggle-section"></section>
 
                         <hr style="width:100%">
 
@@ -753,7 +752,7 @@
                                 <button class="inline-button" id="get-reg">Get</button>
                             </div>
                             <div class="input-group">
-                                <label for="get-reg-value">Value</label>
+                                <label>Value</label>
                                 <div class="text">
                                     <span id="get-reg-value">0x1234</span>
                                 </div>
@@ -808,12 +807,12 @@
                         </section>
                     </nav>
                 </div>
-                
-				<figure>
+
+                <figure>
                     <div id="stream-container" class="image-container hidden">
                         <img id="stream" src="" crossorigin>
                         <!-- Overlay image -->
-                        <img id="overlay-stream" src="" crossorigin style="
+                        <img id="overlay-stream" style="
                                    position: absolute;
                                    top: 0; left: 0;
                                    width: 100%; height: auto;
@@ -828,463 +827,795 @@
             </div>
         </section>
 
+
         <script>
-			document.addEventListener('DOMContentLoaded', function (event)
-			{
-			    var baseHost  = document.location.origin;
-			    var streamUrl        = baseHost + ':81';
-			    var streamOverlayUrl = baseHost + ':82';
 
-				function fetchUrl(url, cb)
-				{
-					fetch(url)
-						.then(function(response)
-						{
-							if (response.status !== 200) { cb(response.status, response.statusText); }
-							else {
-							  response.text()
-							  .then(function(data) { cb(200, data); })
-							  .catch(function(err) { cb(-1, err); });
-							}
-						})
-						.catch(function(err) { cb(-1, err); });
-				}
+function ironbow(value, minVal, maxVal)
+{
+    let t = (value - minVal) / (maxVal - minVal);
 
-			  function setReg(reg, offset, mask, value, cb) {
-				  //console.log('Set Reg', '0x'+reg.toString(16), offset, '0x'+mask.toString(16), '0x'+value.toString(16), '('+value+')');
-				  value = (value & mask) << offset;
-				  mask = mask << offset;
-				  fetchUrl(`${baseHost}/reg?reg=${reg}&mask=${mask}&val=${value}`, cb);
-			  }
+    let r = 0, g = 0, b = 0;
 
-			  function getReg(reg, offset, mask, cb) {
-				  mask = mask << offset;
-				  fetchUrl(`${baseHost}/greg?reg=${reg}&mask=${mask}`, function(code, txt) {
-					  let value = 0;
-					  if(code == 200) {
-						value = parseInt(txt);
-						value = (value & mask) >> offset;
-						txt = ''+value;
-					  }
-					  cb(code, txt);
-					});
-				  }
+    if (t < 0.25) {              // Blue to Purple
+        r = 128.0 * (t / 0.25);
+        g = 0;
+        b = 255.0;
+    } else if (t < 0.5) {        // Purple to Red
+        r = 128.0 + 127.0 * ((t - 0.25) / 0.25);
+        g = 0;
+        b = 255.0 - 255.0 * ((t - 0.25) / 0.25);
+    } else if (t < 0.75) {       // Red to Orange
+        r = 255.0;
+        g = 128.0 * ((t - 0.5) / 0.25);
+        b = 0;
+    } else {                     // Orange to Yellow/White
+        r = 255.0;
+        g = 128.0 + 127.0 * ((t - 0.75) / 0.25);
+        b = 127.0 * ((t - 0.75) / 0.25);
+    }
 
-			  function setXclk(xclk, cb) {
-				  fetchUrl(`${baseHost}/xclk?xclk=${xclk}`, cb);
-			  }
+    // Clamp to [0..255] and integer
+    r = Math.max(0, Math.min(255, Math.round(r)));
+    g = Math.max(0, Math.min(255, Math.round(g)));
+    b = Math.max(0, Math.min(255, Math.round(b)));
 
-              /* start_x is used to pass native resolution, start_y is not used*/
-			  function setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x, output_y, cb)
-			  {
-				  fetchUrl(`${baseHost}/resolution?sx=${start_x}&offx=${offset_x}&offy=${offset_y}&tx=${total_x}&ty=${total_y}&ox=${output_x}&oy=${output_y}`, cb);
-			  }
+    return [r, g, b]; // array [R,G,B]
+}
 
-			  const setRegButton = document.getElementById('set-reg')
-			  setRegButton.onclick = () => {
-				let reg   = parseInt(document.getElementById('reg-addr').value);
-				let mask  = parseInt(document.getElementById('reg-mask').value);
-				let value = parseInt(document.getElementById('reg-value').value);
+// width has to be multiple of 4 bytes
+function drawBMPBase64(frameData, width, height)
+{
+    const bpp            = 3;
+    const BMP_HEADER_LEN = 54;
+    const pix_count      = width * height;
+    const dataSize       = pix_count*bpp; 
+    const fileSize       = BMP_HEADER_LEN + dataSize;
 
-				setReg(reg, 0, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
-				});
-			  }
+    // zeroed during creation
+    const outBuffer = new Uint8Array(fileSize);
 
-			  const getRegButton = document.getElementById('get-reg')
-			  getRegButton.onclick = () => {
-				let reg   = parseInt(document.getElementById('get-reg-addr').value);
-				let mask  = parseInt(document.getElementById('get-reg-mask').value);
-				let value = document.getElementById('get-reg-value');
+    // --- BMP Header (14 bytes) ---
+    outBuffer[0] = 0x42; // 'B'
+    outBuffer[1] = 0x4D; // 'M'
+    outBuffer[2] =  fileSize & 0xFF;
+    outBuffer[3] = (fileSize >> 8) & 0xFF;
+    outBuffer[4] = (fileSize >> 16) & 0xFF;
+    outBuffer[5] = (fileSize >> 24) & 0xFF;
+    outBuffer[10] = BMP_HEADER_LEN; // pixel data offset
 
-				getReg(reg, 0, mask, function(code, txt) {
-											  if (code != 200) { value.innerHTML = 'Error['+code+']: '+txt; }
-											  else {
-												value.innerHTML = '0x' + parseInt(txt).toString(16) + ' ('+txt+')';
-										      }
-				});
-			  }
+    // --- DIB Header (BITMAPINFOHEADER, 40 bytes) ---
+    outBuffer[14] = 40; // header size
+    outBuffer[18] =  width & 0xFF;
+    outBuffer[19] = (width >> 8) & 0xFF;
+    outBuffer[20] = (width >> 16) & 0xFF;
+    outBuffer[21] = (width >> 24) & 0xFF;
+    outBuffer[22] =  height & 0xFF;
+    outBuffer[23] = (height >> 8) & 0xFF;
+    outBuffer[24] = (height >> 16) & 0xFF;
+    outBuffer[25] = (height >> 24) & 0xFF;
+    outBuffer[26] = 1;     // planes
+    outBuffer[28] = 24;    // bits per pixel (24-bit RGB)
+    outBuffer[30] = 0;     // compression
+    outBuffer[31] = 0;     // compression
+    outBuffer[32] = 0;     // compression
+    outBuffer[33] = 0;     // compression
+    outBuffer[34] =  dataSize & 0xFF;
+    outBuffer[35] = (dataSize >> 8) & 0xFF;
+    outBuffer[36] = (dataSize >> 16) & 0xFF;
+    outBuffer[37] = (dataSize >> 24) & 0xFF;
 
-			  const setXclkButton = document.getElementById('set-xclk')
-			  setXclkButton.onclick = () => {
-				  let xclk = parseInt(document.getElementById('xclk').value);
+    // Reinterpret as Float32Array
+    const floats = new Float32Array(frameData.buffer, frameData.byteOffset, frameData.byteLength / 4);
 
-				  setXclk(xclk, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
-				});
-			  }
+    //--Find min max--------------------------------------
+    let fMin =  Infinity;
+    let fMax = -Infinity;
 
-			  const setResButton = document.getElementById('set-resolution')
-			  setResButton.onclick = () => {
-				  let start_x  = parseInt(document.getElementById('start-x').value);
-				  let offset_x = parseInt(document.getElementById('offset-x').value);
-				  let offset_y = parseInt(document.getElementById('offset-y').value);
-				  let total_x  = parseInt(document.getElementById('total-x').value);
-				  let total_y  = parseInt(document.getElementById('total-y').value);
-				  let output_x = parseInt(document.getElementById('output-x').value);
-				  let output_y = parseInt(document.getElementById('output-y').value);
+    for (let i = 0; i < pix_count; i++) {
+        if (floats[i] < fMin) fMin = floats[i];
+        if (floats[i] > fMax) fMax = floats[i];
+    }
+
+    let i = 0;
+    for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++)
+        {
+            let srcInd = y * width + (width-1 - x);     // mirror horizontally
+
+            const [r, g, b] = ironbow(floats[srcInd], fMin, fMax);
+
+            let indOut = BMP_HEADER_LEN + i*3;
+
+            // imgData.data is Uint8ClampedArray of length width x height x 4
+            outBuffer[indOut + 0] = b;
+            outBuffer[indOut + 1] = g;
+            outBuffer[indOut + 2] = r;
+            i++;
+        }
+    }
+
+
+    function uint8ToBase64(uint8) {
+        let binary = "";
+        for (let i = 0; i < uint8.length; i++) {
+            binary += String.fromCharCode(uint8[i]);
+        }
+        return btoa(binary);
+    }
+
+    const bmpBase64 = uint8ToBase64(outBuffer);
+
+    const imgSrc = "data:image/bmp;base64," + bmpBase64;
+
+    const viewOverlay = document.getElementById('overlay-stream');
+    viewOverlay.src = imgSrc;
+}
+
+
+function drawFrame(frameData)
+{
+    let width  = 32;
+    let height = 24;
+    let pix_count = width * height;
+
+    const canvas  = document.createElement("canvas");
+    canvas.width  = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+				    
+    // Reinterpret as Float32Array
+    const floats = new Float32Array(frameData.buffer, frameData.byteOffset, frameData.byteLength / 4);
+    const imgData = ctx.createImageData(32, 24);
+
+    //--Find min max--------------------------------------
+    let fMin =  Infinity;
+    let fMax = -Infinity;
+
+    for (let i = 0; i < pix_count; i++) {
+        if (floats[i] < fMin) fMin = floats[i];
+        if (floats[i] > fMax) fMax = floats[i];
+    }
+
+    //for (let i = 0; i < pix_count; i++) {
+    //    const [r, g, b] = ironbow(floats[i], fMin, fMax);
+    //    const j = i * 4;
+
+    //    // imgData.data is Uint8ClampedArray of length width x height x 4
+    //    imgData.data[j]     = r;
+    //    imgData.data[j + 1] = g;
+    //    imgData.data[j + 2] = b;
+    //    imgData.data[j + 3] = 255;
+    //}
+
+
+    let i = 0;
+    for (let y = height-1; y >= 0; y--)                 // flip vertically
+    {
+        for (let x = 0; x < width; x++)
+        {
+            let srcInd = y * width + (width-1 - x);     // mirror horizontally
+
+            const [r, g, b] = ironbow(floats[srcInd], fMin, fMax);
+
+            // imgData.data is Uint8ClampedArray of length width x height x 4
+            imgData.data[i*4]     = r;
+            imgData.data[i*4 + 1] = g;
+            imgData.data[i*4 + 2] = b;
+            imgData.data[i*4 + 3] = 255;
+            i++;
+        }
+    }
+                    
+    ctx.putImageData(imgData, 0, 0);
+
+    const viewOverlay = document.getElementById('overlay-stream');
+    viewOverlay.src = canvas.toDataURL();
+}
+
+function indexOfSubarray(haystack, needle)
+{
+    if (needle.length === 0) return -1;
+
+    for (let i=0; i <= haystack.length - needle.length; i++)
+    {
+        let match = true;
+        for (let j=0; j < needle.length; j++)
+        {
+            if (haystack[i + j] !== needle[j]) {
+                match = false;
+                break;
+            }
+        }
+        if (match) return i;
+    }
+    return -1;
+}
+
+/*
+HTTP/1.1 200 OK
+Content-Type: multipart/x-mixed-replace; boundary=frame
+
+--frame
+Content-Type: image/jpeg
+Content-Length: 12345
+
+[binary JPEG data for frame 1]
+
+--frame
+Content-Type: image/jpeg
+Content-Length: 12087
+*/
+
+let controller = null;
+
+async function fetchMultipartBinary(url)
+{
+    controller = new AbortController();
+
+    try
+    {
+
+        const response = await fetch(url, { signal: controller.signal });
+
+        if (!response.ok)   throw new Error("HTTP error " + response.status);
+        if (!response.body) throw new Error("ReadableStream not supported");
+
+        // Get boundary from headers
+        const contentType = response.headers.get("Content-Type") || "";
+        const match = contentType.match(/boundary=([^;]+)/i);
+        if (!match) throw new Error("No boundary in Content-Type header");
+				    
+        // encode into Uint8Array
+        const boundarySeparator = new TextEncoder().encode("--" + match[1] + "\r\n");
+
+        // get ReadableStreamDefaultReader
+        const reader = response.body.getReader();
+
+        let buffer = new Uint8Array(0);
+
+        // helper: concatenate Uint8Arrays
+        function concat(a, b) {
+            let c = new Uint8Array(a.length + b.length);
+
+            c.set(a, 0);        // (array, offset in c)
+            c.set(b, a.length); // (array, offset in c)
+
+            return c;
+        }
+
+        const header2dataSeparator = new TextEncoder().encode("\r\n\r\n");
+
+        while (true) {
+            // "value" is Uint8Array holding received chunk of data
+            // "done" is boolean turining into true when stream is finished
+            const { value, done } = await reader.read();
+            if (done) break;
+            if (!value) continue;
+
+            buffer = concat(buffer, value);
+
+            let indBoundaryStart;
+            // Search for boundary
+            while ((indBoundaryStart = indexOfSubarray(buffer, boundarySeparator)) !== -1)
+            {
+                // Extract CHUNK up to boundary into a new array
+                const chunk = buffer.slice(0, indBoundaryStart);
+
+                // Delete CHUNK and trailing Boundary marker from the upcomming data buffer
+                buffer = buffer.slice(indBoundaryStart + boundarySeparator.length);
+
+                // PARSE THE CHUNK ---------------------------------------------
+
+                // Split headers and body
+                const indHeaderEnd = indexOfSubarray(chunk, header2dataSeparator);
+
+                if (indHeaderEnd !== -1) {
+                    const headerBytes = chunk.slice(0, indHeaderEnd);
+                    // observe trailing "\n\r"
+                    const bodyBytes   = chunk.slice(indHeaderEnd + header2dataSeparator.length, chunk.length-2);
+
+                    const headers = new TextDecoder().decode(headerBytes);
+                    const match = headers.match(/Content-Length:\s*(\d+)/);
+                    const contentLength = match ? parseInt(match[1], 10) : null;
+				                
+                    // Call user function with binary body
+                    if (contentLength == 32*24*4)
+                        drawBMPBase64(bodyBytes, 32, 24);
+                }
+            }
+        }
+    }
+    catch (err)
+    {
+        if (err.name === "AbortError")
+            console.log("Fetch aborted by user");
+        else
+            console.error("Fetch failed:", err);
+    }
+}
+
+async function fetchBinary(url)
+{
+    const response = await fetch(url);
+
+    if (!response.ok)   throw new Error("HTTP error " + response.status);
+
+    const bodyBytes = await response.arrayBuffer(); // wait for full body
+
+    if (bodyBytes.byteLength == 32*24*4)
+        drawBMPBase64(new Uint8Array(bodyBytes), 32, 24);
+}</script>
+        <script>
+
+document.addEventListener('DOMContentLoaded', function (event)
+{
+    var baseHost  = document.location.origin;
+    var streamUrl        = baseHost + ':81';
+    var streamOverlayUrl = baseHost + ':82';
+
+    function fetchUrl(url, cb)
+    {
+        fetch(url)
+            .then(function(response)
+            {
+                if (response.status !== 200) { cb(response.status, response.statusText); }
+                else {
+                    response.text()
+                    .then(function(data) { cb(200, data); })
+                    .catch(function(err) { cb(-1, err); });
+                }
+            })
+            .catch(function(err) { cb(-1, err); });
+    }
+
+    function setReg(reg, offset, mask, value, cb) {
+        //console.log('Set Reg', '0x'+reg.toString(16), offset, '0x'+mask.toString(16), '0x'+value.toString(16), '('+value+')');
+        value = (value & mask) << offset;
+        mask = mask << offset;
+        fetchUrl(`${baseHost}/reg?reg=${reg}&mask=${mask}&val=${value}`, cb);
+    }
+
+    function getReg(reg, offset, mask, cb) {
+        mask = mask << offset;
+        fetchUrl(`${baseHost}/greg?reg=${reg}&mask=${mask}`, function(code, txt) {
+            let value = 0;
+            if(code == 200) {
+                value = parseInt(txt);
+                value = (value & mask) >> offset;
+                txt = ''+value;
+            }
+            cb(code, txt);
+        });
+    }
+
+    function setXclk(xclk, cb) {
+        fetchUrl(`${baseHost}/xclk?xclk=${xclk}`, cb);
+    }
+
+    /* start_x is used to pass native resolution, start_y is not used*/
+    function setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x, output_y, cb)
+    {
+        fetchUrl(`${baseHost}/resolution?sx=${start_x}&offx=${offset_x}&offy=${offset_y}&tx=${total_x}&ty=${total_y}&ox=${output_x}&oy=${output_y}`, cb);
+    }
+
+    const setRegButton = document.getElementById('set-reg')
+    setRegButton.onclick = () => {
+        let reg   = parseInt(document.getElementById('reg-addr').value);
+        let mask  = parseInt(document.getElementById('reg-mask').value);
+        let value = parseInt(document.getElementById('reg-value').value);
+
+        setReg(reg, 0, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
+        });
+    }
+
+    const getRegButton = document.getElementById('get-reg')
+    getRegButton.onclick = () => {
+        let reg   = parseInt(document.getElementById('get-reg-addr').value);
+        let mask  = parseInt(document.getElementById('get-reg-mask').value);
+        let value = document.getElementById('get-reg-value');
+
+        getReg(reg, 0, mask, function(code, txt) {
+            if (code != 200) { value.innerHTML = 'Error['+code+']: '+txt; }
+            else {
+                value.innerHTML = '0x' + parseInt(txt).toString(16) + ' ('+txt+')';
+            }
+        });
+    }
+
+    const setXclkButton = document.getElementById('set-xclk')
+    setXclkButton.onclick = () => {
+        let xclk = parseInt(document.getElementById('xclk').value);
+
+        setXclk(xclk, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
+        });
+    }
+
+    const setResButton = document.getElementById('set-resolution')
+    setResButton.onclick = () => {
+        let start_x  = parseInt(document.getElementById('start-x').value);
+        let offset_x = parseInt(document.getElementById('offset-x').value);
+        let offset_y = parseInt(document.getElementById('offset-y').value);
+        let total_x  = parseInt(document.getElementById('total-x').value);
+        let total_y  = parseInt(document.getElementById('total-y').value);
+        let output_x = parseInt(document.getElementById('output-x').value);
+        let output_y = parseInt(document.getElementById('output-y').value);
                   
-				  setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
-                            function (code, txt) {
-                                  if (code != 200) { alert('Error['+code+']: ' + txt);
-                                }
-				  });
-			  }
+        setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
+                  function (code, txt) {
+                      if (code != 200) { alert('Error['+code+']: ' + txt);
+                      }
+                  });
+    }
 
-			  const setRegValue = (el) => {
+    const setRegValue = (el) => {
 
-				let reg    = el.attributes.reg ? parseInt(el.attributes.reg.nodeValue) : 0;
-				let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
-				let mask   = el.attributes.mask ? parseInt(el.attributes.mask.nodeValue) : 255;
-				let value = 0;
-				switch (el.type) {
-				  case 'checkbox':
-					value = el.checked ? mask : 0;
-					break;
-				  case 'range':
-				  case 'text':
-				  case 'select-one':
-					value = el.value;
-					break
-				  default:
-					return;
-				}
+        let reg    = el.attributes.reg    ? parseInt(el.attributes.reg.nodeValue)    : 0;
+        let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
+        let mask   = el.attributes.mask   ? parseInt(el.attributes.mask.nodeValue)   : 255;
+        let value = 0;
+        switch (el.type) {
+            case 'checkbox':
+                value = el.checked ? mask : 0;
+                break;
+            case 'range':
+            case 'text':
+            case 'select-one':
+                value = el.value;
+                break
+            default:
+                return;
+        }
 
-				setReg(reg, offset, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
-				});
-			  }
+        setReg(reg, offset, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
+        });
+    }
 
-			  // Attach on change action for register elements
-			  document
-				.querySelectorAll('.reg-action')
-				.forEach(el => {
-					if (el.type === 'text') {
-						el.onkeyup = function(e){
-							if(e.keyCode == 13) { setRegValue(el); }
-						}
-					}
-					else { el.onchange = () => setRegValue(el) }
-				})
+    // Attach on change action for register elements
+    document
+      .querySelectorAll('.reg-action')
+      .forEach(el => {
+          if (el.type === 'text') {
+              el.onkeyup = function(e){
+                  if(e.keyCode == 13) { setRegValue(el); }
+              }
+          }
+          else { el.onchange = () => setRegValue(el) }
+      })
 
 
-			  const updateRegValue = (el, value, updateRemote) => {
-				let initialValue;
-				let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
-				let mask   = (el.attributes.mask ? parseInt(el.attributes.mask.nodeValue) : 255) << offset;
-				value = (value & mask) >> offset;
-				if (el.type === 'checkbox') {
-				    initialValue = el.checked;
-				    value = !!value;
-				    el.checked = value;
-				}
-				else
-				{
-				    initialValue = el.value;
-				    el.value = value;
-				}
-			  }
+    const updateRegValue = (el, value, updateRemote) => {
+        let initialValue;
+        let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
+        let mask   = (el.attributes.mask ? parseInt(el.attributes.mask.nodeValue) : 255) << offset;
+        value = (value & mask) >> offset;
+        if (el.type === 'checkbox') {
+            initialValue = el.checked;
+            value = !!value;
+            el.checked = value;
+        }
+        else
+        {
+            initialValue = el.value;
+            el.value = value;
+        }
+    }
 
-			  const printReg = (el) => {
-				let reg    = el.attributes.reg ? parseInt(el.attributes.reg.nodeValue) : 0;
-				let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
-				let mask   = el.attributes.mask ? parseInt(el.attributes.mask.nodeValue) : 255;
-				let value = 0;
-				switch (el.type) {
-				  case 'checkbox':
-					value = el.checked ? mask : 0;
-					break;
-				  case 'range':
-				  case 'select-one':
-					value = el.value;
-					break
-				  default:
-					return;
-				}
-				value = (value & mask) << offset;
-				return '0x'+reg.toString(16)+', 0x'+value.toString(16);
-			  }
+    const printReg = (el) => {
+        let reg    = el.attributes.reg ? parseInt(el.attributes.reg.nodeValue) : 0;
+        let offset = el.attributes.offset ? parseInt(el.attributes.offset.nodeValue) : 0;
+        let mask   = el.attributes.mask ? parseInt(el.attributes.mask.nodeValue) : 255;
+        let value = 0;
+        switch (el.type) {
+            case 'checkbox':
+                value = el.checked ? mask : 0;
+                break;
+            case 'range':
+            case 'select-one':
+                value = el.value;
+                break
+            default:
+                return;
+        }
+        value = (value & mask) << offset;
+        return '0x'+reg.toString(16)+', 0x'+value.toString(16);
+    }
 
-			  const hide = el => {
-				el.classList.add('hidden');
-			  }
-			  const show = el => {
-				el.classList.remove('hidden');
-			  }
+    const hide = el => {
+        el.classList.add('hidden');
+    }
+    const show = el => {
+        el.classList.remove('hidden');
+    }
 
-			  const disable = el => {
-				el.classList.add('disabled');
-				el.disabled = true
-			  }
+    const disable = el => {
+        el.classList.add('disabled');
+        el.disabled = true
+    }
 
-			  const enable = el => {
-				el.classList.remove('disabled');
-				el.disabled = false;
-			  }
+    const enable = el => {
+        el.classList.remove('disabled');
+        el.disabled = false;
+    }
 
-			  const updateValue = (el, value, updateRemote) => {
-				updateRemote = updateRemote == null ? true : updateRemote
-				let initialValue;
-				if (el.type === 'checkbox') {
-				  initialValue = el.checked;
-				  value = !!value;
-				  el.checked = value;
-				}
-				else
-				{
-				  initialValue = el.value;
-				  el.value = value;
-				}
+    const updateValue = (el, value, updateRemote) => {
+        updateRemote = updateRemote == null ? true : updateRemote
+        let initialValue;
+        if (el.type === 'checkbox') {
+            initialValue = el.checked;
+            value = !!value;
+            el.checked = value;
+        }
+        else
+        {
+            initialValue = el.value;
+            el.value = value;
+        }
 
-				if (updateRemote && initialValue !== value) {
-				    updateConfig(el);
-				}
-				else if (!updateRemote)
-				{
-				    if (el.id === "aec") { value ? hide(exposure) : show(exposure) }
-				    else if(el.id === "agc") {
-					    if (value) {
-					      show(gainCeiling)
-					      hide(agcGain)
-					    }
-					    else
-					    {
-					      hide(gainCeiling)
-					      show(agcGain)
-					    }
-				    }
-				    else if (el.id === "awb_gain") {
-					    value ? show(wb) : hide(wb)
-				    }
-				    else if(el.id == "led_intensity") {
-					    value > -1 ? show(ledGroup) : hide(ledGroup)
-				    }
-				}
-			  }
+        if (updateRemote && initialValue !== value) {
+            updateConfig(el);
+        }
+        else if (!updateRemote)
+        {
+            if (el.id === "aec") { value ? hide(exposure) : show(exposure) }
+            else if(el.id === "agc") {
+                if (value) {
+                    show(gainCeiling)
+                    hide(agcGain)
+                }
+                else
+                {
+                    hide(gainCeiling)
+                    show(agcGain)
+                }
+            }
+            else if (el.id === "awb_gain") {
+                value ? show(wb) : hide(wb)
+            }
+            else if(el.id == "led_intensity") {
+                value > -1 ? show(ledGroup) : hide(ledGroup)
+            }
+        }
+    }
 
-			  function updateConfig (el) {
+    function updateConfig (el) {
 
-			    let value;
+        let value;
 
-			    switch (el.type)
-			    {
-				  case 'checkbox':
-					value = el.checked ? 1 : 0
-					break
-				  case 'range':
-				  case 'select-one':
-					value = el.value
-					break
-				  case 'button':
-				  case 'submit':
-					value = '1'
-					break
-				  default:
-					return
-				}
+        switch (el.type)
+        {
+            case 'checkbox':
+                value = el.checked ? 1 : 0
+                break
+            case 'range':
+            case 'select-one':
+                value = el.value
+                break
+            case 'button':
+            case 'submit':
+                value = '1'
+                break
+            default:
+                return
+        }
 
-			    const query = `${baseHost}/control?var=${el.id}&val=${value}`;
+        const query = `${baseHost}/control?var=${el.id}&val=${value}`;
 
-				fetch(query)
-				  .then(response => { 
-					console.log(`request to ${query} finished, status: ${response.status}`)
-				  })
-			  }
+        fetch(query)
+          .then(response => { 
+              console.log(`request to ${query} finished, status: ${response.status}`)
+          })
+    }
 
-				document
-					.querySelectorAll('.close')
-					.forEach(el => {
-						el.onclick = () => { hide(el.parentNode) }
-					})
+    document
+        .querySelectorAll('.close')
+        .forEach(el => {
+            el.onclick = () => { hide(el.parentNode) }
+        })
 
-				// read initial values
-				fetch(`${baseHost}/status`)
-					.then(function (response) { return response.json() })
-					.then(function (state) {
-						document
-							.querySelectorAll('.default-action')
-								.forEach(el => { updateValue(el, state[el.id], false) })
+    // read initial values
+    fetch(`${baseHost}/status`)
+        .then(function (response) { return response.json() })
+        .then(function (state) {
+            document
+                .querySelectorAll('.default-action')
+                    .forEach(el => { updateValue(el, state[el.id], false) })
 						
-						document
-							.querySelectorAll('.reg-action')
-								.forEach(el => {
-									let reg = el.attributes.reg ? parseInt(el.attributes.reg.nodeValue) : 0;
-									if (reg == 0) { return; }
+            document
+                .querySelectorAll('.reg-action')
+                    .forEach(el => {
+                        let reg = el.attributes.reg ? parseInt(el.attributes.reg.nodeValue) : 0;
+                        if (reg == 0) { return; }
 
-									updateRegValue(el, state['0x' + reg.toString(16)], false)
-								})
-					})
+                        updateRegValue(el, state['0x' + reg.toString(16)], false)
+                    })
+        })
 
-				const uploadBtn = document.getElementById("upload-firmware-btn");
+    const uploadBtn = document.getElementById("upload-firmware-btn");
 
-				uploadBtn.addEventListener("click", async () => {
-				    let fileInput = document.getElementById("firmware-fileInput");
+    uploadBtn.addEventListener("click", async () => {
+        let fileInput = document.getElementById("firmware-fileInput");
 
-				    // Check if any file is selected
-				    if (!fileInput.files || fileInput.files.length === 0) {
-				        alert("No file selected");
-				        return;
-				    }
+        // Check if any file is selected
+        if (!fileInput.files || fileInput.files.length === 0) {
+            alert("No file selected");
+            return;
+        }
 
-				    const file = fileInput.files[0];
-				    if (file.size === 0) {
-				        alert("File is empty");
-				        return;
-				    }
+        const file = fileInput.files[0];
+        if (file.size === 0) {
+            alert("File is empty");
+            return;
+        }
 
-				    //const allowedTypes = ["text/html"];
-				    //if (!allowedTypes.includes(file.type)) {
-				    //    alert("Invalid file type: " + file.type);
-				    //    return;
-				    //}
+        //const allowedTypes = ["text/html"];
+        //if (!allowedTypes.includes(file.type)) {
+        //    alert("Invalid file type: " + file.type);
+        //    return;
+        //}
 
-				    if ( !confirm("Are you sure you want to update server firmware?") ) return;
+        if ( !confirm("Are you sure you want to update server firmware?") ) return;
 
-                    try {
-	  	    		    // send raw binary directly
-                        const response = await fetch(`${baseHost}/uploadserver`, {
-                                                        method: "POST",
-                                                        headers: {
-                                                            "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
-                                                        },
-				                                        body: file
-				                                   });
-                        if (!response.ok) throw new Error("Upload failed");
+        try {
+            // send raw binary directly
+            const response = await fetch(`${baseHost}/uploadserver`, {
+                method: "POST",
+                headers: {
+                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                },
+                body: file
+            });
+            if (!response.ok) throw new Error("Upload failed");
 
-                        const text = await response.text();
+            const text = await response.text();
 
-                        alert("Server says: " + text);
-		    		}
-                    catch (err) {
-                        alert("Error: " + err.message);
-                    }
+            alert("Server says: " + text);
+        }
+        catch (err) {
+            alert("Error: " + err.message);
+        }
 
-				});
+    }); // upload
 
-				  const view          = document.getElementById('stream');
-				  const viewOverlay   = document.getElementById('overlay-stream');
-				  const viewContainer = document.getElementById('stream-container');
-				  const stillButton   = document.getElementById('get-still');
-				  const streamButton  = document.getElementById('toggle-stream');
-				  const closeButton   = document.getElementById('close-stream');
-				  const saveButton    = document.getElementById('save-still');
-				  const ledGroup      = document.getElementById('led-group');
+    const view          = document.getElementById('stream');
+    const viewOverlay   = document.getElementById('overlay-stream');
+    const viewContainer = document.getElementById('stream-container');
+    const stillButton   = document.getElementById('get-still');
+    const streamButton  = document.getElementById('toggle-stream');
+    const closeButton   = document.getElementById('close-stream');
+    const saveButton    = document.getElementById('save-still');
+    const ledGroup      = document.getElementById('led-group');
 
-				  const startStream = () => {
-				      view.src = `${streamUrl}/stream`;
-				      viewOverlay.src = `${streamOverlayUrl}/stream`;
-				      show(viewContainer);
-				      streamButton.innerHTML = 'Stop Stream';
-				  }
+    const startStream = () => {
+        view.src = `${streamUrl}/stream`;
+        //viewOverlay.src = `${streamOverlayUrl}/stream`;
+        show(viewContainer);
 
-				  const stopStream = () => {
-				    window.stop(); // Stop page loading (removed for better solution downwards)
-				    //view.src = '';
-					streamButton.innerHTML = 'Start Stream';
-				  }
+        fetchMultipartBinary(`${streamOverlayUrl}/stream`);
+
+        streamButton.innerHTML = 'Stop Stream';
+    }
+
+    const stopStream = () => {
+        //window.stop();
+        view.src = '';
+
+        if (controller) {
+            controller.abort(); // stops the fetch
+            controller = null;
+        }
+
+        streamButton.innerHTML = 'Start Stream';
+    }
 
 
-				  // Attach actions to buttons
-				  stillButton.onclick = () => {
-					stopStream();
-					view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
-					viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
-					show(viewContainer);
-				  }
+    // Attach actions to buttons
+    stillButton.onclick = () => {
+        stopStream();
+        view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
+        //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
 
-				  closeButton.onclick = () => {
-					stopStream();
-					hide(viewContainer);
-				  }
+        fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
 
-				  streamButton.onclick = () => {
-					const streamEnabled = streamButton.innerHTML === 'Stop Stream';
+        show(viewContainer);
+    }
+
+    closeButton.onclick = () => {
+        stopStream();
+        hide(viewContainer);
+    }
+
+    streamButton.onclick = () => {
+        const streamEnabled = streamButton.innerHTML === 'Stop Stream';
 					
-					if (streamEnabled)
-						stopStream();
-					else
-						startStream();
-				  }
+        if (streamEnabled)
+            stopStream();
+        else
+            startStream();
+    }
 
-				  saveButton.onclick = () => {
-					var canvas = document.createElement("canvas");
+    saveButton.onclick = () => {
+        var canvas = document.createElement("canvas");
 					
-					canvas.width  = view.width;
-					canvas.height = view.height;
+        canvas.width  = view.width;
+        canvas.height = view.height;
 
-					document.body.appendChild(canvas);
+        document.body.appendChild(canvas);
 
-					var context = canvas.getContext('2d');
-					context.drawImage(view, 0, 0);
-					try {
-					  var dataURL = canvas.toDataURL('image/jpeg');
-					  saveButton.href = dataURL;
-					  var d = new Date();
-					  saveButton.download = d.getFullYear() +
-                                            ("0" + (d.getMonth() + 1)).slice(-2) +
-                                            ("0" + d.getDate()).slice(-2) +
-                                            ("0" + d.getHours()).slice(-2) +
-                                            ("0" + d.getMinutes()).slice(-2) +
-                                            ("0" + d.getSeconds()).slice(-2) + ".jpg";
-					}
-					catch (e) {
-					  console.error(e);
-					}
-					canvas.parentNode.removeChild(canvas);
-				  }
+        var context = canvas.getContext('2d');
+        context.drawImage(view, 0, 0);
+        try {
+            var dataURL = canvas.toDataURL('image/jpeg');
+            saveButton.href = dataURL;
+            var d = new Date();
+            saveButton.download = d.getFullYear() +
+                                  ("0" + (d.getMonth() + 1)).slice(-2) +
+                                  ("0" + d.getDate()).slice(-2) +
+                                  ("0" + d.getHours()).slice(-2) +
+                                  ("0" + d.getMinutes()).slice(-2) +
+                                  ("0" + d.getSeconds()).slice(-2) + ".jpg";
+        }
+        catch (e) {
+            console.error(e);
+        }
+        canvas.parentNode.removeChild(canvas);
+    }
 
-				  // Attach default on change action
-				  document
-					.querySelectorAll('.default-action')
-					.forEach(el => { el.onchange = () => updateConfig(el) })
+    // Attach default on change action
+    document
+      .querySelectorAll('.default-action')
+      .forEach(el => { el.onchange = () => updateConfig(el) })
 
-				  // Custom actions
+    // Custom actions
 
-				  // Gain
-				  const agc         = document.getElementById('agc');
-				  const agcGain     = document.getElementById('agc_gain-group');
-				  const gainCeiling = document.getElementById('gainceiling-group');
+    // Gain
+    const agc         = document.getElementById('agc');
+    const agcGain     = document.getElementById('agc_gain-group');
+    const gainCeiling = document.getElementById('gainceiling-group');
 
-				  agc.onchange = () => {
-				    updateConfig(agc);
-					if (agc.checked) {
-					  show(gainCeiling);
-					  hide(agcGain);
-					}
-					else {
-					  hide(gainCeiling);
-					  show(agcGain);
-					}
-				  }
+    agc.onchange = () => {
+        updateConfig(agc);
+        if (agc.checked) {
+            show(gainCeiling);
+            hide(agcGain);
+        }
+        else {
+            hide(gainCeiling);
+            show(agcGain);
+        }
+    }
 
-				  // Exposure
-				  const aec      = document.getElementById('aec');
-				  const exposure = document.getElementById('aec_value-group');
+    // Exposure
+    const aec      = document.getElementById('aec');
+    const exposure = document.getElementById('aec_value-group');
 
-				  aec.onchange = () => {
-					updateConfig(aec);
-					aec.checked ? hide(exposure) : show(exposure);
-				  }
+    aec.onchange = () => {
+        updateConfig(aec);
+        aec.checked ? hide(exposure) : show(exposure);
+    }
 
-				  // AWB
-				  const awb = document.getElementById('awb_gain');
-				  const wb = document.getElementById('wb_mode-group');
+    // AWB
+    const awb = document.getElementById('awb_gain');
+    const wb  = document.getElementById('wb_mode-group');
 
-				  awb.onchange = () => {
-					updateConfig(awb);
-					awb.checked ? show(wb) : hide(wb);
-				  }
+    awb.onchange = () => {
+        updateConfig(awb);
+        awb.checked ? show(wb) : hide(wb);
+    }
 
-				  // Detection and framesize
-				  const framesize = document.getElementById('framesize');
+    // Detection and framesize
+    const framesize = document.getElementById('framesize');
 
-				  framesize.onchange = () => {
-				    updateConfig(framesize);
-					if (framesize.value > 5) {
-					  updateValue(detect, false);
-					  updateValue(recognize, false);
-					}
-				  }
-			})
+    framesize.onchange = () => {
+        updateConfig(framesize);
+        if (framesize.value > 5)
+        {
+            updateValue(detect, false);
+            updateValue(recognize, false);
+        }
+    }
+})
+</script>
 
-        </script>
     </body>
 </html>
 )"

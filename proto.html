@@ -1,0 +1,437 @@
+﻿R"(<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width,initial-scale=1">
+        <title>ESP32 OV2640</title>
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <section class="flexContainer">
+            <div id="logo">
+                <label for="nav-toggle-cb" id="nav-toggle"><h2>&#9776;&nbsp;&nbsp;Settings</h2></label>
+            </div>
+            <div id="GeneralSettings">
+                <div id="sidebar">
+                    <input type="checkbox" id="nav-toggle-cb" checked="checked">
+                    <nav id="menu">
+
+                        <section id="CaptureButtons">
+                            <button id="get-still">Capture Image</button>
+                            <button id="toggle-stream">Start Stream</button>
+
+                            <div class="group-grey-box">
+                                <div class="input-group" id="opacity-group">
+                                    <label for="opacity">Thermap Opacity</label>
+                                    <div class="range-min">0%</div>
+                                    <input type="range" id="opacity" min="0" max="100" value="40" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
+                                    <div class="range-max">100%</div>
+                                </div>
+                            </div>
+                        </section>
+
+                        <hr style="width:100%">
+                        <label for="nav-toggle-mlx" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 params</label>
+                        <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section"></section>
+
+                        <hr style="width:100%">
+
+                        <label for="nav-toggle-win" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 resolution 'n crop</label>
+                        <input type="checkbox" id="nav-toggle-win" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+
+                            <div class="group-grey-box">
+                                <div class="input-group" id="framesize-group">
+                                    <label for="framesize">Resolution</label>
+                                    <select id="framesize" class="default-action">
+                                        <!-- 2MP -->
+                                        <option value="15">UXGA(1600x1200)</option>
+                                        <option value="14">SXGA(1280x1024)</option>
+                                        <option value="13">HD(1280x720)</option>
+                                        <option value="12">XGA(1024x768)</option>
+                                        <option value="11">SVGA(800x600)</option>
+                                        <option value="10">VGA(640x480)</option>
+                                        <option value="9">HVGA(480x320)</option>
+                                        <option value="8">CIF(400x296)</option>
+                                        <!--option value="7">320x320</option--> <!-- Unsupported on ov2640 -->
+                                        <option value="6">QVGA(320x240)</option>
+                                        <option value="5">240x240</option>
+                                        <option value="4">HQVGA(240x176)</option>
+                                        <option value="3">QCIF(176x144)</option>
+                                        <option value="2">128x128</option>
+                                        <option value="1">QQVGA(160x120)</option>
+                                        <option value="0">96x96</option>
+                                    </select>
+                                </div>
+                                <br>
+                                <div class="input-group" id="quality-group">
+                                    <label for="quality">JPEG Quality</label>
+                                    <div class="range-min">4</div>
+                                    <input type="range" id="quality" min="4" max="63" value="10" title="10" class="default-action" oninput="this.title = this.value">
+                                    <div class="range-max">63</div>
+                                </div>
+                            </div>
+
+                            <div class="group-grey-box">
+                                <div class="input-group">
+                                    <label for="start-x">Raw Resolution</label>
+                                    <select id="start-x">
+                                        <option value="2">CIF (400x296)</option>
+                                        <option value="1">SVGA (800x600)</option>
+                                        <option value="0" selected="selected">UXGA (1600x1200)</option>
+                                    </select>
+                                </div>
+                                <br>
+
+                                <div class="input-group" id="set-offset-res-group">
+                                    <label for="offset-x">Window Start</label>
+                                    <div class="text">
+                                        X:<input id="offset-x" type="text" minlength="1" maxlength="3" size="5" value="150">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="offset-y" type="text" minlength="1" maxlength="3" size="5" value="90">
+                                    </div>
+                                </div>
+                                <div class="input-group" id="set-total-res-group">
+                                    <label for="total-x">Window End</label>
+                                    <div class="text">
+                                        X:<input id="total-x" type="text" minlength="1" maxlength="4" size="5" value="1350">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="total-y" type="text" minlength="1" maxlength="4" size="5" value="990">
+                                    </div>
+                                </div>
+                                <div class="input-group" id="set-output-res-group">
+                                    <label for="output-x">Output Size</label>
+                                    <div class="text">
+                                        X:<input id="output-x" type="text" minlength="1" maxlength="4" size="5" value="1200">
+                                    </div>
+                                    <div class="text">
+                                        Y:<input id="output-y" type="text" minlength="1" maxlength="4" size="5" value="900">
+                                    </div>
+                                </div>
+                                <button id="set-resolution">Set Resolution</button>
+                            </div>
+                        </section>
+
+                        <hr style="width:100%">
+                        <label for="nav-toggle-params" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 params</label>
+                        <input type="checkbox" id="nav-toggle-params" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+                            <div class="group-grey-box">
+                                <div class="input-group" id="brightness-group">
+                                    <label for="brightness">Brightness</label>
+                                    <div class="range-min">-2</div>
+                                    <input type="range" id="brightness" min="-2" max="2" value="0" class="default-action">
+                                    <div class="range-max">2</div>
+                                </div>
+                                <div class="input-group" id="contrast-group">
+                                    <label for="contrast">Contrast</label>
+                                    <div class="range-min">-2</div>
+                                    <input type="range" id="contrast" min="-2" max="2" value="0" class="default-action">
+                                    <div class="range-max">2</div>
+                                </div>
+                                <div class="input-group" id="saturation-group">
+                                    <label for="saturation">Saturation</label>
+                                    <div class="range-min">-2</div>
+                                    <input type="range" id="saturation" min="-2" max="2" value="0" class="default-action">
+                                    <div class="range-max">2</div>
+                                </div>
+                            </div>
+                            <div class="input-group" id="special_effect-group">
+                                <label for="special_effect">Special Effect</label>
+                                <select id="special_effect" class="default-action">
+                                    <option value="0" selected="selected">No Effect</option>
+                                    <option value="1">Negative</option>
+                                    <option value="2">Grayscale</option>
+                                    <option value="3">Red Tint</option>
+                                    <option value="4">Green Tint</option>
+                                    <option value="5">Blue Tint</option>
+                                    <option value="6">Sepia</option>
+                                </select>
+                            </div>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="awb-group">
+                                    <label for="awb">Auto White Balance</label>
+                                    <div class="switch">
+                                        <input id="awb" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="awb"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="awb_gain-group">
+                                    <label for="awb_gain">AWB Gain</label>
+                                    <div class="switch">
+                                        <input id="awb_gain" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="awb_gain"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="wb_mode-group">
+                                    <label for="wb_mode">WB Mode</label>
+                                    <select id="wb_mode" class="default-action">
+                                        <option value="0" selected="selected">Auto</option>
+                                        <option value="1">Sunny</option>
+                                        <option value="2">Cloudy</option>
+                                        <option value="3">Office</option>
+                                        <option value="4">Home</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="aec-group">
+                                    <label for="aec">Auto Exposure (AE)</label>
+                                    <div class="switch">
+                                        <input id="aec" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="aec"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="aec2-group">
+                                    <label for="aec2">AE Refined</label>
+                                    <div class="switch">
+                                        <input id="aec2" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="aec2"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="ae_level-group">
+                                    <label for="ae_level">AE Bias</label>
+                                    <div class="range-min">-2</div>
+                                    <input type="range" id="ae_level" min="-2" max="2" value="0" class="default-action">
+                                    <div class="range-max">2</div>
+                                </div>
+                                <div class="input-group hidden" id="aec_value-group">
+                                    <label for="aec_value">AE Value</label>
+                                    <div class="range-min">0</div>
+                                    <input type="range" id="aec_value" min="0" max="1200" value="204" class="default-action">
+                                    <div class="range-max">1200</div>
+                                </div>
+                                <div class="input-group" id="agc-group">
+                                    <label for="agc">Auto Analog Gain</label>
+                                    <div class="switch">
+                                        <input id="agc" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="agc"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group hidden" id="agc_gain-group">
+                                    <label for="agc_gain">Gain</label>
+                                    <div class="range-min">1x</div>
+                                    <input type="range" id="agc_gain" min="0" max="30" value="5" class="default-action">
+                                    <div class="range-max">31x</div>
+                                </div>
+                                <div class="input-group" id="gainceiling-group">
+                                    <label for="gainceiling">Auto Gain Ceiling</label>
+                                    <div class="range-min">2x</div>
+                                    <input type="range" id="gainceiling" min="0" max="6" value="0" class="default-action">
+                                    <div class="range-max">128x</div>
+                                </div>
+                            </div>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="bpc-group">
+                                    <label for="bpc">Black Px Correction</label>
+                                    <div class="switch">
+                                        <input id="bpc" type="checkbox" class="default-action">
+                                        <label class="slider" for="bpc"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="wpc-group">
+                                    <label for="wpc">White Px Correction</label>
+                                    <div class="switch">
+                                        <input id="wpc" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="wpc"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="raw_gma-group">
+                                    <label for="raw_gma">Gamma Correction</label>
+                                    <div class="switch">
+                                        <input id="raw_gma" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="raw_gma"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="lenc-group">
+                                    <label for="lenc">Lens Shading Corr</label>
+                                    <div class="switch">
+                                        <input id="lenc" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="lenc"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="hmirror-group">
+                                    <label for="hmirror">H-Mirror</label>
+                                    <div class="switch">
+                                        <input id="hmirror" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="hmirror"></label>
+                                    </div>
+                                </div>
+                                <div class="input-group" id="vflip-group">
+                                    <label for="vflip">V-Flip</label>
+                                    <div class="switch">
+                                        <input id="vflip" type="checkbox" class="default-action" checked="checked">
+                                        <label class="slider" for="vflip"></label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="input-group" id="dcw-group">
+                                <label for="dcw">Color Noise Reduction</label>
+                                <div class="switch">
+                                    <input id="dcw" type="checkbox" class="default-action" checked="checked">
+                                    <label class="slider" for="dcw"></label>
+                                </div>
+                            </div>
+                            <div class="input-group" id="colorbar-group">
+                                <label for="colorbar">Color Bar Pattern</label>
+                                <div class="switch">
+                                    <input id="colorbar" type="checkbox" class="default-action">
+                                    <label class="slider" for="colorbar"></label>
+                                </div>
+                            </div>
+
+                            <div class="input-group" id="led-group">
+                                <label for="led_intensity">LED Intensity</label>
+                                <div class="range-min">0</div>
+                                <input type="range" id="led_intensity" min="0" max="255" value="0" class="default-action">
+                                <div class="range-max">255</div>
+                            </div>
+
+                            <section id="xclk-section" class="nothidden">
+                                <div class="input-group" id="set-xclk-group">
+                                    <label for="set-xclk">XCLK, MHz</label>
+                                    <div class="text">
+                                        <input id="xclk" type="text" minlength="1" maxlength="2" size="2" value="20">
+                                    </div>
+                                    <button class="inline-button" id="set-xclk">Set</button>
+                                </div>
+                            </section>
+
+                        </section>
+
+                        <hr style="width:100%">
+                        <label for="nav-toggle-reg" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 register Get/Set</label>
+                        <input type="checkbox" id="nav-toggle-reg" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+                            <!--h4>Set Register</h4-->
+                            <div class="input-group" id="set-reg-group">
+                                <label for="reg-addr">Reg</label>
+                                <div class="text">
+                                    <input id="reg-addr" type="text" minlength="4" maxlength="6" size="6" value="0x111">
+                                </div>
+                            </div>
+                            <div class="input-group" id="set-mask-group">
+                                <label for="reg-mask">Mask</label>
+                                <div class="text">
+                                    <input id="reg-mask" type="text" minlength="4" maxlength="4" size="4" value="0x80">
+                                </div>
+                            </div>
+                            <div class="input-group" id="set-value-group">
+                                <label for="reg-value">Value</label>
+                                <div class="text">
+                                    <input id="reg-value" type="text" minlength="4" maxlength="4" size="4" value="0x80">
+                                </div>
+                            </div>
+                            <div class="input-group" id="reg-set-button-group">
+                                <label></label>
+                                <button class="inline-button" id="set-reg">Set</button>
+                            </div>
+
+                            <hr style="width:50%">
+                            <!--h4>Get Register</h4-->
+                            <div class="input-group" id="get-reg-group">
+                                <label for="get-reg-addr">Reg</label>
+                                <div class="text">
+                                    <input id="get-reg-addr" type="text" minlength="4" maxlength="6" size="6" value="0x111">
+                                </div>
+                            </div>
+                            <div class="input-group" id="get-reg-group">
+                                <label for="get-reg-mask">Mask</label>
+                                <div class="text">
+                                    <input id="get-reg-mask" type="text" minlength="4" maxlength="6" size="6" value="0x80">
+                                </div>
+                            </div>
+                            <div class="input-group" id="reg-get-button-group">
+                                <label></label>
+                                <button class="inline-button" id="get-reg">Get</button>
+                            </div>
+                            <div class="input-group">
+                                <label for="get-reg-value">Value</label>
+                                <div class="text">
+                                    <span id="get-reg-value">0x1234</span>
+                                </div>
+                            </div>
+                        </section>
+
+                        <hr style="width:100%">
+
+                        <label for="nav-toggle-2640pll" class="toggle-section-label">&#9776;&nbsp;&nbsp;ov2640 CLK</label>
+                        <input type="checkbox" id="nav-toggle-2640pll" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+                            <div class="input-group">
+                                <label for="2640pll1">CLK 2X</label>
+                                <div class="switch">
+                                    <input id="2640pll1" type="checkbox" class="reg-action" reg="0x111" offset="7" mask="0x01">
+                                    <label class="slider" for="2640pll1"></label>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="2640pll3">CLK DIV</label>
+                                <div class="text">
+                                    0
+                                    <input id="2640pll3" type="text" minlength="1" maxlength="2" size="2" value="1" class="reg-action" reg="0x111" offset="0" mask="0x3f">63
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="2640pll5">Auto PCLK</label>
+                                <div class="switch">
+                                    <input id="2640pll5" type="checkbox" class="reg-action" reg="0xd3" offset="7" mask="0x01">
+                                    <label class="slider" for="2640pll5"></label>
+                                </div>
+                            </div>
+                            <div class="input-group">
+                                <label for="2640pll4">PCLK DIV</label>
+                                <div class="text">
+                                    0
+                                    <input id="2640pll4" type="text" minlength="1" maxlength="3" size="3" value="4" class="reg-action" reg="0xd3" offset="0" mask="0x7f">127
+                                </div>
+                            </div>
+                        </section>
+
+                        <hr style="width:100%">
+
+                        <label for="nav-toggle-http" class="toggle-section-label">&#9776;&nbsp;&nbsp;Firmware</label>
+                        <input type="checkbox" id="nav-toggle-http" class="hidden toggle-section-button" checked="checked">
+                        <section class="toggle-section">
+
+                            <div class="group-grey-box">
+                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 300px;">
+                            </div>
+                            <button id="upload-firmware-btn">Update...</button>
+                        </section>
+                    </nav>
+                </div>
+
+                <figure>
+                    <div id="stream-container" class="image-container hidden">
+                        <img id="stream" src="" crossorigin>
+                        <!-- Overlay image -->
+                        <img id="overlay-stream" style="
+                                   position: absolute;
+                                   top: 0; left: 0;
+                                   width: 100%; height: auto;
+                                   border-radius: 4px;
+                                   opacity: 0.5;
+                                   pointer-events: none; /* so clicks go to underlying elements */">
+                        <a id="save-still" href="#" class="button save" download="capture.jpg">Save</a>
+                        <div class="close" id="close-stream">X</div>
+                    </div>
+                </figure>
+
+            </div>
+        </section>
+
+
+        <script src="scriptCaptureAndStream.js"></script>
+        <script src="script.js"></script>
+
+    </body>
+</html>
+)"

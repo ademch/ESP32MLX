@@ -150,7 +150,7 @@ mlx_fb_t MLX90640_fb_get()
 		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, Emmisivity, TambientReflected, mlx90640_float_frame);
 	}
 
-	MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
+	//MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
 
 	uint64_t us = (uint64_t)esp_timer_get_time();
 	fb.timestamp.tv_sec  = us / 1000000UL;
@@ -158,13 +158,15 @@ mlx_fb_t MLX90640_fb_get()
 
 	fb.width  = 32;
 	fb.height = 24;
-	
+	fb.buf    = mlx90640_float_frame;
+	fb.len    = fb.width * fb.height * sizeof(float);
+
 	return fb;
 }
 
 void MLX90640_fb_return(mlx_fb_t& fb)
 {
-	free(fb.buf);
+	//free(fb.buf);
 	fb.buf = NULL;
 }
 
