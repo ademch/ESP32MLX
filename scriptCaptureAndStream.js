@@ -329,13 +329,14 @@ async function fetchBinary(url)
 const viewOverlay = document.getElementById('overlay-stream');
 const tooltip     = document.getElementById('tooltip');
 
+
 // a timer and a global object storing mouse coords so timer cunc can access last known coords
 let timer = null;
 let mouseEventCopy = {
     clientX: 0,
     clientY: 0,
-    pageX: 0,
-    pageY: 0
+    pageX:   0,
+    pageY:   0
 };
 
 function handleMouseMove(e)
@@ -346,8 +347,8 @@ function handleMouseMove(e)
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    // Scale to protoData resolution
-    const scaledX = Math.floor(x / rect.width * 32);
+    // Scale to thermal array resolution
+    const scaledX = Math.floor(x / rect.width  * 32);
     const scaledY = Math.floor(y / rect.height * 24);
 
     // Bounds check
@@ -356,9 +357,9 @@ function handleMouseMove(e)
     {
         const value = g_floats[scaledY * 32 + scaledX];
 
-        tooltip.textContent = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
-        tooltip.style.left  = e.pageX + 12 + "px";
-        tooltip.style.top   = e.pageY + 18 + "px";
+        tooltip.textContent   = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
+        tooltip.style.left    = e.pageX + 12 + "px";
+        tooltip.style.top     = e.pageY + 18 + "px";
         tooltip.style.display = "block";
     }
     else {
