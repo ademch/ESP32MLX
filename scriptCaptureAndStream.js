@@ -1,8 +1,15 @@
 
+const g_floats = new Float32Array(32*24);
+
 
 function ironbow(value, minVal, maxVal)
 {
-    let t = (value - minVal) / (maxVal - minVal);
+    let t;
+    
+    if (maxVal - minVal > 1)
+        t = (value - minVal) / (maxVal - minVal);
+    else
+        t = (value - minVal);
 
     let r = 0, g = 0, b = 0;
 
@@ -33,7 +40,7 @@ function ironbow(value, minVal, maxVal)
 }
 
 // width has to be multiple of 4 bytes
-function drawBMPBase64(frameData, width, height)
+function drawBMPBase64(frameData, width, height, elId)
 {
     const bpp            = 3;
     const BMP_HEADER_LEN = 54;
@@ -76,6 +83,9 @@ function drawBMPBase64(frameData, width, height)
 
     // Reinterpret as Float32Array
     const floats = new Float32Array(frameData.buffer, frameData.byteOffset, frameData.byteLength / 4);
+    
+    // save array to global copy
+    if (elId == 'overlay-stream') g_floats.set(floats);
 
     //--Find min max--------------------------------------
     let fMin =  Infinity;
@@ -87,7 +97,8 @@ function drawBMPBase64(frameData, width, height)
     }
 
     let i = 0;
-    for (let y = 0; y < height; y++) {
+    for (let y = 0; y < height; y++)
+    {
         for (let x = 0; x < width; x++)
         {
             let srcInd = y * width + (width-1 - x);     // mirror horizontally
@@ -104,7 +115,6 @@ function drawBMPBase64(frameData, width, height)
         }
     }
 
-
     function uint8ToBase64(uint8) {
         let binary = "";
         for (let i = 0; i < uint8.length; i++) {
@@ -117,7 +127,7 @@ function drawBMPBase64(frameData, width, height)
 
     const imgSrc = "data:image/bmp;base64," + bmpBase64;
 
-    const viewOverlay = document.getElementById('overlay-stream');
+    const viewOverlay = document.getElementById(elId);
     viewOverlay.src = imgSrc;
 }
 
@@ -224,7 +234,6 @@ async function fetchMultipartBinary(url)
 
     try
     {
-
         const response = await fetch(url, { signal: controller.signal });
 
         if (!response.ok)   throw new Error("HTTP error " + response.status);
@@ -290,7 +299,7 @@ async function fetchMultipartBinary(url)
 				                
                     // Call user function with binary body
                     if (contentLength == 32*24*4)
-                        drawBMPBase64(bodyBytes, 32, 24);
+                        drawBMPBase64(bodyBytes, 32, 24, 'overlay-stream');
                 }
             }
         }
@@ -313,5 +322,81 @@ async function fetchBinary(url)
     const bodyBytes = await response.arrayBuffer(); // wait for full body
 
     if (bodyBytes.byteLength == 32*24*4)
-        drawBMPBase64(new Uint8Array(bodyBytes), 32, 24);
+        drawBMPBase64(new Uint8Array(bodyBytes), 32, 24, 'overlay-stream');
 }
+
+
+const viewOverlay = document.getElementById('overlay-stream');
+const tooltip     = document.getElementById('tooltip');
+
+// a timer and a global object storing mouse coords so timer cunc can access last known coords
+let timer = null;
+let mouseEventCopy = {
+    clientX: 0,
+    clientY: 0,
+    pageX: 0,
+    pageY: 0
+};
+
+function handleMouseMove(e)
+{
+    const rect = viewOverlay.getBoundingClientRect();
+
+    // Mouse position relative to image
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+
+    // Scale to protoData resolution
+    const scaledX = Math.floor(x / rect.width * 32);
+    const scaledY = Math.floor(y / rect.height * 24);
+
+    // Bounds check
+    if (scaledX >= 0 && scaledX < 32 &&
+        scaledY >= 0 && scaledY < 24)
+    {
+        const value = g_floats[scaledY * 32 + scaledX];
+
+        tooltip.textContent = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
+        tooltip.style.left  = e.pageX + 12 + "px";
+        tooltip.style.top   = e.pageY + 18 + "px";
+        tooltip.style.display = "block";
+    }
+    else {
+        tooltip.style.display = "none";
+    }
+}
+
+viewOverlay.addEventListener("mousemove", (e) => {
+
+    // update coords
+    mouseEventCopy.clientX = e.clientX;
+    mouseEventCopy.clientY = e.clientY;
+    mouseEventCopy.pageX   = e.pageX;
+    mouseEventCopy.pageY   = e.pageY;
+
+    handleMouseMove(mouseEventCopy);
+});
+
+viewOverlay.addEventListener("mouseenter", (e) => {
+    
+    // update coords
+    mouseEventCopy.clientX = e.clientX;
+    mouseEventCopy.clientY = e.clientY;
+    mouseEventCopy.pageX   = e.pageX;
+    mouseEventCopy.pageY   = e.pageY;
+    
+    // call every 500 ms
+    timer = setInterval(() => handleMouseMove(mouseEventCopy), 500);
+});
+
+viewOverlay.addEventListener("mouseleave", () => {
+    tooltip.style.display = "none";
+
+    clearInterval(timer);
+    timer = null;
+});
+
+
+// Initialize images
+drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits also temperature array
+drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');

@@ -410,7 +410,7 @@
                 </div>
 
                 <figure>
-                    <div id="stream-container" class="image-container hidden">
+                    <div id="stream-container" class="image-container">
                         <img id="stream" src="" crossorigin>
                         <!-- Overlay image -->
                         <img id="overlay-stream" style="
@@ -419,7 +419,7 @@
                                    width: 100%; height: auto;
                                    border-radius: 4px;
                                    opacity: 0.5;
-                                   pointer-events: none; /* so clicks go to underlying elements */">
+                                   /*pointer-events: none; /* so clicks go to underlying elements */">
                         <a id="save-still" href="#" class="button save" download="capture.jpg">Save</a>
                         <div class="close" id="close-stream">X</div>
                     </div>
@@ -427,6 +427,8 @@
 
             </div>
         </section>
+
+        <div id="tooltip" class="tooltip"></div>
 
 
         <script src="scriptCaptureAndStream.js"></script>
