@@ -141,10 +141,10 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\hal\include\hal\ledc_types.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\soc\esp32\include\soc\soc_caps.h" />
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\qio_qspi\include\sdkconfig.h" />
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640.h" />
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_regs.h" />
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_settings.h" />
     <ClInclude Include="board_config.h" />
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640.h" />
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640_regs.h" />
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640_settings.h" />
     <ClInclude Include="httpd_capture_stream.h" />
     <ClInclude Include="httpd_firmware.h" />
     <ClInclude Include="indexHTML.h" />

@@ -140,15 +140,6 @@
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\cores\esp32\esp32-hal-log.h">
       <Filter>Header Files\External</Filter>
     </ClInclude>
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640.h">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClInclude>
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_regs.h">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClInclude>
-    <ClInclude Include="..\CameraWebServer\esp32-camera-master\sensors\private_include\ov2640_settings.h">
-      <Filter>Header Files\External\CAMERA</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\hardware\esp32\3.3.0\libraries\FS\src\FS.h">
       <Filter>Header Files\External\FS</Filter>
     </ClInclude>
@@ -169,6 +160,15 @@
     </ClInclude>
     <ClInclude Include="httpd_capture_stream.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640_regs.h">
+      <Filter>Header Files\External\CAMERA</Filter>
+    </ClInclude>
+    <ClInclude Include="esp32-camera-master\sensors\private_include\ov2640_settings.h">
+      <Filter>Header Files\External\CAMERA</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
