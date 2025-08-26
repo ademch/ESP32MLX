@@ -117,6 +117,9 @@ void setup() {
 		// Setup LED FLash if LED pin is defined in camera_pins.h
 		ledcAttach(LED_GPIO_NUM, 5000, 8);	// pin, freq, resolution 8bit
 
+		// wait the cam to reconfigure resolution, otherwise cam_task runs out of stack
+		delay(2000);
+
 		s->set_brightness(s, 0);   // sensor init does not correspond to zero
 
 	Serial.println("success");

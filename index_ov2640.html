@@ -1644,7 +1644,7 @@ $('save-still-btn').onclick = () => {
 
     context.drawImage(view, 0, 0, canvas.width, canvas.height);
 
-    context.globalAlpha = 1.0 - $('opacity-slider').value/100;
+    context.globalAlpha = $('opacity-slider').value/100;
         context.drawImage(viewOverlay, 0, 0, canvas.width, canvas.height);
     context.globalAlpha = 1.0;
 
