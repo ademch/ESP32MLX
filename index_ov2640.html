@@ -413,14 +413,14 @@ input.toggle-section-button {
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="get-still" style="font-size: 16px;">Capture Image</button>
-                            <button id="toggle-stream" style="font-size: 16px;">Start Stream</button>
+                            <button id="capture-image-btn" style="font-size: 16px;">Capture Image</button>
+                            <button id="toggle-stream-btn" style="font-size: 16px;">Start Stream</button>
 
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
-                                    <label for="opacity">Thermap Opacity</label>
+                                    <label for="opacity-slider">Thermap Opacity</label>
                                     <div class="range-min">0%</div>
-                                    <input type="range" id="opacity" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
+                                    <input type="range" id="opacity-slider" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
                                     <div class="range-max">100%</div>
                                 </div>
                             </div>
@@ -830,7 +830,7 @@ input.toggle-section-button {
                                    border-radius: 4px;
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
-                        <a id="save-still" href="#" class="button save" download="capture.jpg">Save</a>
+                        <a id="save-still-btn" href="#" class="button save" download="capture.jpg">Save</a>
                       </div>
                 </figure>
 
@@ -840,6 +840,8 @@ input.toggle-section-button {
         <div id="tooltip" class="tooltip"></div>
 
         <script>
+const $ = (id) => document.getElementById(id);
+
 var baseHost         = document.location.origin;
 var streamUrl        = baseHost + ':81';
 var streamOverlayUrl = baseHost + ':82';
@@ -1017,34 +1019,34 @@ function updateDeviceParam (el) {
 }
 
 
-const ledGroup    = document.getElementById('led-group');
-const agc         = document.getElementById('agc');
-const agcGain     = document.getElementById('agc_gain-group');
-const gainCeiling = document.getElementById('gainceiling-group');
-const aec         = document.getElementById('aec');
-const exposure    = document.getElementById('aec_value-group');
-const awb         = document.getElementById('awb_gain');
-const wb          = document.getElementById('wb_mode-group');
+const ledGroup    = $('led-group');
+const agc         = $('agc');
+const agcGain     = $('agc_gain-group');
+const gainCeiling = $('gainceiling-group');
+const aec         = $('aec');
+const exposure    = $('aec_value-group');
+const awb         = $('awb_gain');
+const wb          = $('wb_mode-group');
 
 //=================================================================================
 
 document.addEventListener('DOMContentLoaded', function (event)
 {
-    const setRegButton = document.getElementById('set-reg');
+    const setRegButton = $('set-reg');
     setRegButton.onclick = () => {
-        let reg   = parseInt(document.getElementById('reg-addr').value);
-        let mask  = parseInt(document.getElementById('reg-mask').value);
-        let value = parseInt(document.getElementById('reg-value').value);
+        let reg   = parseInt($('reg-addr').value);
+        let mask  = parseInt($('reg-mask').value);
+        let value = parseInt($('reg-value').value);
 
         setReg(reg, 0, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
         });
     }
 
-    const getRegButton = document.getElementById('get-reg');
+    const getRegButton = $('get-reg');
     getRegButton.onclick = () => {
-        let reg   = parseInt(document.getElementById('get-reg-addr').value);
-        let mask  = parseInt(document.getElementById('get-reg-mask').value);
-        let value = document.getElementById('get-reg-value');
+        let reg   = parseInt($('get-reg-addr').value);
+        let mask  = parseInt($('get-reg-mask').value);
+        let value = $('get-reg-value');
 
         getReg(reg, 0, mask, function(code, txt) {
             if (code != 200) { value.innerHTML = 'Error['+code+']: '+txt; }
@@ -1054,33 +1056,33 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const setXclkButton = document.getElementById('set-xclk');
+    const setXclkButton = $('set-xclk');
     setXclkButton.onclick = () => {
-        let xclk = parseInt(document.getElementById('xclk').value);
+        let xclk = parseInt($('xclk').value);
 
         fetchUrl(`${baseHost}/xclk?xclk=${xclk}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const mlxAmbReflectedBtn = document.getElementById('ambReflectedBtn');
+    const mlxAmbReflectedBtn = $('ambReflectedBtn');
     mlxAmbReflectedBtn.onclick = () => {
-        let ambRefl = parseInt(document.getElementById('ambReflected').value);
+        let ambRefl = parseInt($('ambReflected').value);
 
         fetchUrl(`${baseHost}/mlx?ambReflected=${ambRefl}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const setResButton = document.getElementById('set-resolution');
+    const setResButton = $('set-resolution');
     setResButton.onclick = () => {
-        let start_x  = parseInt(document.getElementById('start-x').value);
-        let offset_x = parseInt(document.getElementById('offset-x').value);
-        let offset_y = parseInt(document.getElementById('offset-y').value);
-        let total_x  = parseInt(document.getElementById('total-x').value);
-        let total_y  = parseInt(document.getElementById('total-y').value);
-        let output_x = parseInt(document.getElementById('output-x').value);
-        let output_y = parseInt(document.getElementById('output-y').value);
+        let start_x  = parseInt($('start-x').value);
+        let offset_x = parseInt($('offset-x').value);
+        let offset_y = parseInt($('offset-y').value);
+        let total_x  = parseInt($('total-x').value);
+        let total_y  = parseInt($('total-y').value);
+        let output_x = parseInt($('output-x').value);
+        let output_y = parseInt($('output-y').value);
                   
         setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
                   function (code, txt) {
@@ -1143,9 +1145,9 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
 
 
-    const uploadBtn = document.getElementById("upload-firmware-btn");
+    const uploadBtn = $("upload-firmware-btn");
     uploadBtn.addEventListener("click", async () => {
-        let fileInput = document.getElementById("firmware-fileInput");
+        let fileInput = $("firmware-fileInput");
 
         // Check if any file is selected
         if (!fileInput.files || fileInput.files.length === 0) {
@@ -1189,7 +1191,7 @@ document.addEventListener('DOMContentLoaded', function (event)
     }); // upload
 
 
-    const rebootBtn = document.getElementById("reboot-btn");
+    const rebootBtn = $("reboot-btn");
     rebootBtn.addEventListener("click", () => {
 
         if ( !confirm("Are you sure you want to reboot esp32 ?") ) return;
@@ -1363,12 +1365,8 @@ function drawBMPBase64(frameData, width, height, elId)
         return btoa(binary);
     }
 
-    const bmpBase64 = uint8ToBase64(outBuffer);
-
-    const imgSrc = "data:image/bmp;base64," + bmpBase64;
-
-    const viewOverlay = document.getElementById(elId);
-    viewOverlay.src = imgSrc;
+    const img = $(elId);
+    img.src   = "data:image/bmp;base64," + uint8ToBase64(outBuffer);
 }
 
 
@@ -1506,8 +1504,8 @@ async function fetchBinary(url)
 }
 
 
-const viewOverlay = document.getElementById('overlay-stream');
-const tooltip     = document.getElementById('tooltip');
+const viewOverlay = $('overlay-stream');
+const tooltip     = $('tooltip');
 
 
 // a timer and a global object storing mouse coords so timer cunc can access last known coords
@@ -1584,21 +1582,15 @@ drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits als
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');
 
 
-const view          = document.getElementById('stream');
-const viewContainer = document.getElementById('stream-container');
-const stillButton   = document.getElementById('get-still');
-const streamButton  = document.getElementById('toggle-stream');
-const saveButton    = document.getElementById('save-still');
-
+const view          = $('stream');
 
 const startStream = () => {
     view.src = `${streamUrl}/stream`;
     //viewOverlay.src = `${streamOverlayUrl}/stream`;
-    show(viewContainer);
 
     fetchMultipartBinary(`${streamOverlayUrl}/stream`);
 
-    streamButton.innerHTML = 'Stop Stream';
+    $('toggle-stream-btn').innerHTML = 'Stop Stream';
 }
 
 const stopStream = () => {
@@ -1618,23 +1610,21 @@ const stopStream = () => {
         controller = null;
     }
 
-    streamButton.innerHTML = 'Start Stream';
+    $('toggle-stream-btn').innerHTML = 'Start Stream';
 }
 
 
 // Attach actions to buttons
-stillButton.onclick = () => {
+$('capture-image-btn').onclick = () => {
     stopStream();
     view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
         
     //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
     fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
-
-    show(viewContainer);
 }
 
-streamButton.onclick = () => {
-    const streamEnabled = streamButton.innerHTML === 'Stop Stream';
+$('toggle-stream-btn').onclick = () => {
+    const streamEnabled = $('toggle-stream-btn').innerHTML === 'Stop Stream';
 					
     if (streamEnabled)
         stopStream();
@@ -1642,7 +1632,7 @@ streamButton.onclick = () => {
         startStream();
 }
 
-saveButton.onclick = () => {
+$('save-still-btn').onclick = () => {
     var canvas = document.createElement("canvas");
 					
     canvas.width  = view.width;
@@ -1651,17 +1641,23 @@ saveButton.onclick = () => {
     document.body.appendChild(canvas);
 
     var context = canvas.getContext('2d');
-    context.drawImage(view, 0, 0);
+
+    context.drawImage(view, 0, 0, canvas.width, canvas.height);
+
+    context.globalAlpha = 1.0 - $('opacity-slider').value/100;
+        context.drawImage(viewOverlay, 0, 0, canvas.width, canvas.height);
+    context.globalAlpha = 1.0;
+
     try {
-        var dataURL = canvas.toDataURL('image/jpeg');
-        saveButton.href = dataURL;
+        var dataURL = canvas.toDataURL('image/png');
+        $('save-still-btn').href = dataURL;
         var d = new Date();
-        saveButton.download = d.getFullYear() +
-                              ("0" + (d.getMonth() + 1)).slice(-2) +
-                              ("0" + d.getDate()).slice(-2) +
-                              ("0" + d.getHours()).slice(-2) +
-                              ("0" + d.getMinutes()).slice(-2) +
-                              ("0" + d.getSeconds()).slice(-2) + ".jpg";
+        $('save-still-btn').download = d.getFullYear() + "-" +
+                                      ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                      ("0" + d.getDate()).slice(-2) + "_" +
+                                      ("0" + d.getHours()).slice(-2) +  "h" +
+                                      ("0" + d.getMinutes()).slice(-2) +  "m" +
+                                      ("0" + d.getSeconds()).slice(-2) + "s.png";
     }
     catch (e) {
         console.error(e);

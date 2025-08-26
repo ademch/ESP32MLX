@@ -1,4 +1,6 @@
 
+const $ = (id) => document.getElementById(id);
+
 var baseHost         = document.location.origin;
 var streamUrl        = baseHost + ':81';
 var streamOverlayUrl = baseHost + ':82';
@@ -176,34 +178,34 @@ function updateDeviceParam (el) {
 }
 
 
-const ledGroup    = document.getElementById('led-group');
-const agc         = document.getElementById('agc');
-const agcGain     = document.getElementById('agc_gain-group');
-const gainCeiling = document.getElementById('gainceiling-group');
-const aec         = document.getElementById('aec');
-const exposure    = document.getElementById('aec_value-group');
-const awb         = document.getElementById('awb_gain');
-const wb          = document.getElementById('wb_mode-group');
+const ledGroup    = $('led-group');
+const agc         = $('agc');
+const agcGain     = $('agc_gain-group');
+const gainCeiling = $('gainceiling-group');
+const aec         = $('aec');
+const exposure    = $('aec_value-group');
+const awb         = $('awb_gain');
+const wb          = $('wb_mode-group');
 
 //=================================================================================
 
 document.addEventListener('DOMContentLoaded', function (event)
 {
-    const setRegButton = document.getElementById('set-reg');
+    const setRegButton = $('set-reg');
     setRegButton.onclick = () => {
-        let reg   = parseInt(document.getElementById('reg-addr').value);
-        let mask  = parseInt(document.getElementById('reg-mask').value);
-        let value = parseInt(document.getElementById('reg-value').value);
+        let reg   = parseInt($('reg-addr').value);
+        let mask  = parseInt($('reg-mask').value);
+        let value = parseInt($('reg-value').value);
 
         setReg(reg, 0, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
         });
     }
 
-    const getRegButton = document.getElementById('get-reg');
+    const getRegButton = $('get-reg');
     getRegButton.onclick = () => {
-        let reg   = parseInt(document.getElementById('get-reg-addr').value);
-        let mask  = parseInt(document.getElementById('get-reg-mask').value);
-        let value = document.getElementById('get-reg-value');
+        let reg   = parseInt($('get-reg-addr').value);
+        let mask  = parseInt($('get-reg-mask').value);
+        let value = $('get-reg-value');
 
         getReg(reg, 0, mask, function(code, txt) {
             if (code != 200) { value.innerHTML = 'Error['+code+']: '+txt; }
@@ -213,33 +215,33 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const setXclkButton = document.getElementById('set-xclk');
+    const setXclkButton = $('set-xclk');
     setXclkButton.onclick = () => {
-        let xclk = parseInt(document.getElementById('xclk').value);
+        let xclk = parseInt($('xclk').value);
 
         fetchUrl(`${baseHost}/xclk?xclk=${xclk}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const mlxAmbReflectedBtn = document.getElementById('ambReflectedBtn');
+    const mlxAmbReflectedBtn = $('ambReflectedBtn');
     mlxAmbReflectedBtn.onclick = () => {
-        let ambRefl = parseInt(document.getElementById('ambReflected').value);
+        let ambRefl = parseInt($('ambReflected').value);
 
         fetchUrl(`${baseHost}/mlx?ambReflected=${ambRefl}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const setResButton = document.getElementById('set-resolution');
+    const setResButton = $('set-resolution');
     setResButton.onclick = () => {
-        let start_x  = parseInt(document.getElementById('start-x').value);
-        let offset_x = parseInt(document.getElementById('offset-x').value);
-        let offset_y = parseInt(document.getElementById('offset-y').value);
-        let total_x  = parseInt(document.getElementById('total-x').value);
-        let total_y  = parseInt(document.getElementById('total-y').value);
-        let output_x = parseInt(document.getElementById('output-x').value);
-        let output_y = parseInt(document.getElementById('output-y').value);
+        let start_x  = parseInt($('start-x').value);
+        let offset_x = parseInt($('offset-x').value);
+        let offset_y = parseInt($('offset-y').value);
+        let total_x  = parseInt($('total-x').value);
+        let total_y  = parseInt($('total-y').value);
+        let output_x = parseInt($('output-x').value);
+        let output_y = parseInt($('output-y').value);
                   
         setWindow(start_x, offset_x,offset_y, total_x,total_y, output_x,output_y,
                   function (code, txt) {
@@ -302,9 +304,9 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
 
 
-    const uploadBtn = document.getElementById("upload-firmware-btn");
+    const uploadBtn = $("upload-firmware-btn");
     uploadBtn.addEventListener("click", async () => {
-        let fileInput = document.getElementById("firmware-fileInput");
+        let fileInput = $("firmware-fileInput");
 
         // Check if any file is selected
         if (!fileInput.files || fileInput.files.length === 0) {
@@ -348,7 +350,7 @@ document.addEventListener('DOMContentLoaded', function (event)
     }); // upload
 
 
-    const rebootBtn = document.getElementById("reboot-btn");
+    const rebootBtn = $("reboot-btn");
     rebootBtn.addEventListener("click", () => {
 
         if ( !confirm("Are you sure you want to reboot esp32 ?") ) return;

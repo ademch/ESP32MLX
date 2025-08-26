@@ -123,12 +123,8 @@ function drawBMPBase64(frameData, width, height, elId)
         return btoa(binary);
     }
 
-    const bmpBase64 = uint8ToBase64(outBuffer);
-
-    const imgSrc = "data:image/bmp;base64," + bmpBase64;
-
-    const viewOverlay = document.getElementById(elId);
-    viewOverlay.src = imgSrc;
+    const img = $(elId);
+    img.src   = "data:image/bmp;base64," + uint8ToBase64(outBuffer);
 }
 
 
@@ -266,8 +262,8 @@ async function fetchBinary(url)
 }
 
 
-const viewOverlay = document.getElementById('overlay-stream');
-const tooltip     = document.getElementById('tooltip');
+const viewOverlay = $('overlay-stream');
+const tooltip     = $('tooltip');
 
 
 // a timer and a global object storing mouse coords so timer cunc can access last known coords
@@ -344,21 +340,15 @@ drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits als
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');
 
 
-const view          = document.getElementById('stream');
-const viewContainer = document.getElementById('stream-container');
-const stillButton   = document.getElementById('get-still');
-const streamButton  = document.getElementById('toggle-stream');
-const saveButton    = document.getElementById('save-still');
-
+const view          = $('stream');
 
 const startStream = () => {
     view.src = `${streamUrl}/stream`;
     //viewOverlay.src = `${streamOverlayUrl}/stream`;
-    show(viewContainer);
 
     fetchMultipartBinary(`${streamOverlayUrl}/stream`);
 
-    streamButton.innerHTML = 'Stop Stream';
+    $('toggle-stream-btn').innerHTML = 'Stop Stream';
 }
 
 const stopStream = () => {
@@ -378,23 +368,21 @@ const stopStream = () => {
         controller = null;
     }
 
-    streamButton.innerHTML = 'Start Stream';
+    $('toggle-stream-btn').innerHTML = 'Start Stream';
 }
 
 
 // Attach actions to buttons
-stillButton.onclick = () => {
+$('capture-image-btn').onclick = () => {
     stopStream();
     view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
         
     //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
     fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
-
-    show(viewContainer);
 }
 
-streamButton.onclick = () => {
-    const streamEnabled = streamButton.innerHTML === 'Stop Stream';
+$('toggle-stream-btn').onclick = () => {
+    const streamEnabled = $('toggle-stream-btn').innerHTML === 'Stop Stream';
 					
     if (streamEnabled)
         stopStream();
@@ -402,7 +390,7 @@ streamButton.onclick = () => {
         startStream();
 }
 
-saveButton.onclick = () => {
+$('save-still-btn').onclick = () => {
     var canvas = document.createElement("canvas");
 					
     canvas.width  = view.width;
@@ -411,17 +399,23 @@ saveButton.onclick = () => {
     document.body.appendChild(canvas);
 
     var context = canvas.getContext('2d');
-    context.drawImage(view, 0, 0);
+
+    context.drawImage(view, 0, 0, canvas.width, canvas.height);
+
+    context.globalAlpha = 1.0 - $('opacity-slider').value/100;
+        context.drawImage(viewOverlay, 0, 0, canvas.width, canvas.height);
+    context.globalAlpha = 1.0;
+
     try {
-        var dataURL = canvas.toDataURL('image/jpeg');
-        saveButton.href = dataURL;
+        var dataURL = canvas.toDataURL('image/png');
+        $('save-still-btn').href = dataURL;
         var d = new Date();
-        saveButton.download = d.getFullYear() +
-                              ("0" + (d.getMonth() + 1)).slice(-2) +
-                              ("0" + d.getDate()).slice(-2) +
-                              ("0" + d.getHours()).slice(-2) +
-                              ("0" + d.getMinutes()).slice(-2) +
-                              ("0" + d.getSeconds()).slice(-2) + ".jpg";
+        $('save-still-btn').download = d.getFullYear() + "-" +
+                                      ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                      ("0" + d.getDate()).slice(-2) + "_" +
+                                      ("0" + d.getHours()).slice(-2) +  "h" +
+                                      ("0" + d.getMinutes()).slice(-2) +  "m" +
+                                      ("0" + d.getSeconds()).slice(-2) + "s.png";
     }
     catch (e) {
         console.error(e);

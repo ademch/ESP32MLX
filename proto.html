@@ -17,14 +17,14 @@
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="get-still" style="font-size: 16px;">Capture Image</button>
-                            <button id="toggle-stream" style="font-size: 16px;">Start Stream</button>
+                            <button id="capture-image-btn" style="font-size: 16px;">Capture Image</button>
+                            <button id="toggle-stream-btn" style="font-size: 16px;">Start Stream</button>
 
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
-                                    <label for="opacity">Thermap Opacity</label>
+                                    <label for="opacity-slider">Thermap Opacity</label>
                                     <div class="range-min">0%</div>
-                                    <input type="range" id="opacity" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
+                                    <input type="range" id="opacity-slider" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
                                     <div class="range-max">100%</div>
                                 </div>
                             </div>
@@ -434,7 +434,7 @@
                                    border-radius: 4px;
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
-                        <a id="save-still" href="#" class="button save" download="capture.jpg">Save</a>
+                        <a id="save-still-btn" href="#" class="button save" download="capture.jpg">Save</a>
                       </div>
                 </figure>
 
