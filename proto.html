@@ -17,8 +17,8 @@
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="get-still">Capture Image</button>
-                            <button id="toggle-stream">Start Stream</button>
+                            <button id="get-still" style="font-size: 16px;">Capture Image</button>
+                            <button id="toggle-stream" style="font-size: 16px;">Start Stream</button>
 
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
@@ -412,8 +412,13 @@
 
                             <div class="group-grey-box">
                                 <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 300px;">
+                                <button id="upload-firmware-btn">Update...</button>
                             </div>
-                            <button id="upload-firmware-btn">Update...</button>
+
+                            <div class="group-grey-box">
+                                <button id="reboot-btn">Reboot ESP32...</button>
+                            </div>
+
                         </section>
                     </nav>
                 </div>
@@ -430,8 +435,7 @@
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
                         <a id="save-still" href="#" class="button save" download="capture.jpg">Save</a>
-                        <div class="close" id="close-stream">X</div>
-                    </div>
+                      </div>
                 </figure>
 
             </div>

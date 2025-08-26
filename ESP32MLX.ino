@@ -117,6 +117,8 @@ void setup() {
 		// Setup LED FLash if LED pin is defined in camera_pins.h
 		ledcAttach(LED_GPIO_NUM, 5000, 8);	// pin, freq, resolution 8bit
 
+		s->set_brightness(s, 0);   // sensor init does not correspond to zero
+
 	Serial.println("success");
 
 	Serial.print("MLX90640 thermal camera init...");

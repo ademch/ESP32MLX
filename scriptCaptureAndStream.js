@@ -348,7 +348,6 @@ const view          = document.getElementById('stream');
 const viewContainer = document.getElementById('stream-container');
 const stillButton   = document.getElementById('get-still');
 const streamButton  = document.getElementById('toggle-stream');
-const closeButton   = document.getElementById('close-stream');
 const saveButton    = document.getElementById('save-still');
 
 
@@ -392,11 +391,6 @@ stillButton.onclick = () => {
     fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
 
     show(viewContainer);
-}
-
-closeButton.onclick = () => {
-    stopStream();
-    hide(viewContainer);
 }
 
 streamButton.onclick = () => {

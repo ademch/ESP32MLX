@@ -283,12 +283,6 @@ document.addEventListener('DOMContentLoaded', function (event)
       })
 
 
-    document
-        .querySelectorAll('.close')
-        .forEach(el => {
-            el.onclick = () => { hide(el.parentNode); }
-        })
-
     // read initial values
     fetch(`${baseHost}/status`)
         .then(function (response) { return response.json(); })
@@ -305,10 +299,10 @@ document.addEventListener('DOMContentLoaded', function (event)
 
                         updateRegValue(el, state['0x' + reg.toString(16)], false);
                     })
-        })
+        });
+
 
     const uploadBtn = document.getElementById("upload-firmware-btn");
-
     uploadBtn.addEventListener("click", async () => {
         let fileInput = document.getElementById("firmware-fileInput");
 
@@ -352,6 +346,19 @@ document.addEventListener('DOMContentLoaded', function (event)
         }
 
     }); // upload
+
+
+    const rebootBtn = document.getElementById("reboot-btn");
+    rebootBtn.addEventListener("click", () => {
+
+        if ( !confirm("Are you sure you want to reboot esp32 ?") ) return;
+
+        fetch(`${baseHost}/reboot`)
+         .then(response => { 
+             console.log(`Reboot sent, status: ${response.status}`);
+         });
+
+    });
 
 
     // Attach default on change action

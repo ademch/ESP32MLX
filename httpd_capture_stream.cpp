@@ -311,8 +311,8 @@ esp_err_t stream2640_handler(httpd_req_t *req)
 		last_frame = fr_end;
 
 		log_i("MJPG: %ubytes %ums (%.1ffps)", (uint32_t)(buffer_jpg_len),
-			                                (uint32_t)frame_time,
-			                                1000.0 / (uint32_t)frame_time );
+			                                  (uint32_t)frame_time,
+			                                  1000.0 / (uint32_t)frame_time );
 	}
 
 	isStreaming = false;
@@ -365,7 +365,7 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 		int64_t frame_time = (fr_end - last_frame) / 1000;
 		last_frame = fr_end;
 
-		log_i("BMP: %ubytes %ums (%.1ffps)", (uint32_t)(fb.len),
+		log_i("RAW: %ubytes %ums (%.1ffps)", (uint32_t)(fb.len),
 										     (uint32_t)frame_time,
 										     1000.0 / (uint32_t)frame_time );
 	}

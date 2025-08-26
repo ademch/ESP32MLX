@@ -18,6 +18,7 @@
 #include "httpd_firmware.h"
 #include "httpd_capture_stream.h"
 #include "MLX90640_API.h"
+#include "Arduino.h"
 
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
@@ -455,10 +456,24 @@ static esp_err_t win_handler(httpd_req_t *req)
     return httpd_resp_send(req, NULL, 0);
 }
 
+
+esp_err_t reboot_handler(httpd_req_t *req)
+{
+	log_i("Reboot request received");
+
+	httpd_resp_sendstr(req, "Rebooting...");
+
+	ESP.restart();
+
+	return ESP_OK;
+}
+
+//=============================================================================
+
 void startControlAndStreamServers()
 {
 	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-	config.max_uri_handlers = 16;
+	config.max_uri_handlers = 24;
 
 	httpd_uri_t ctrl_index_uri = {
 		.uri = "/",
@@ -629,6 +644,19 @@ void startControlAndStreamServers()
 		#endif
 	};
 
+	httpd_uri_t ctrl_reboot_uri = {
+		.uri = "/reboot",
+		.method = HTTP_GET,
+		.handler = reboot_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
 	httpd_uri_t stream2640_uri = {
 		.uri = "/stream",
 		.method = HTTP_GET,
@@ -673,6 +701,7 @@ void startControlAndStreamServers()
 		httpd_register_uri_handler(control_httpd, &ctrl_mlx_uri);
 
 		httpd_register_uri_handler(control_httpd, &ctrl_uploadserver_uri);
+		httpd_register_uri_handler(control_httpd, &ctrl_reboot_uri);
 
 		httpd_register_uri_handler(control_httpd, &capture90640_uri);
     }
