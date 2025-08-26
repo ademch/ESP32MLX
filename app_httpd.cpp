@@ -17,6 +17,7 @@
 #include "board_config.h"
 #include "httpd_firmware.h"
 #include "httpd_capture_stream.h"
+#include "MLX90640_API.h"
 
 
 #if defined(ARDUINO_ARCH_ESP32) && defined(CONFIG_ARDUHAL_ESP_LOG)
@@ -247,33 +248,59 @@ static esp_err_t status_handler(httpd_req_t *req)
 // GET /xclk
 static esp_err_t xclk_handler(httpd_req_t *req)
 {
-  char _xclk[32];
+    char *buf = NULL;
+    if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-  char *buf = NULL;
-  if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
+		// httpd_query_key_value is a helper function to obtain a URL query tag from
+		// a query string of the format param1=val1&param2=val2
+		char _xclk[16];
+		if (httpd_query_key_value(buf, "xclk", _xclk, sizeof(_xclk)) != ESP_OK)
+		{
+			free(buf);
+			httpd_resp_send_404(req);
+			return ESP_FAIL;
+		}
 
-  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-  // of the format param1=val1&param2=val2
-  if (httpd_query_key_value(buf, "xclk", _xclk, sizeof(_xclk)) != ESP_OK)
-  {
     free(buf);
-    httpd_resp_send_404(req);
-    return ESP_FAIL;
-  }
 
-  free(buf);
+    int xclk = atoi(_xclk);
+    log_i("Set XCLK: %d MHz", xclk);
 
-  int xclk = atoi(_xclk);
-  log_i("Set XCLK: %d MHz", xclk);
-
-  sensor_t *s = esp_camera_sensor_get();
-  int res = s->set_xclk(s, LEDC_TIMER_0, xclk);
+    sensor_t *s = esp_camera_sensor_get();
+    int res = s->set_xclk(s, LEDC_TIMER_0, xclk);
   
-  if (res) return httpd_resp_send_500(req);
+    if (res) return httpd_resp_send_500(req);
 
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    return httpd_resp_send(req, NULL, 0);
+}
 
-  return httpd_resp_send(req, NULL, 0);
+
+// GET /mlx
+static esp_err_t mlx_handler(httpd_req_t *req)
+{
+	char *buf = NULL;
+	if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
+
+		// httpd_query_key_value is a helper function to obtain a URL query tag from
+		// a query string of the format param1=val1&param2=val2
+		char _ambReflected[16];
+		if (httpd_query_key_value(buf, "ambReflected", _ambReflected, sizeof(_ambReflected)) != ESP_OK)
+		{
+			free(buf);
+			httpd_resp_send_404(req);
+			return ESP_FAIL;
+		}
+
+	free(buf);
+
+	float ambReflected = atof(_ambReflected);
+	log_i("_ambReflected: %f C", ambReflected);
+
+	MLX90640_SetAmbientReflected(ambReflected);
+
+	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+	return httpd_resp_send(req, NULL, 0);
 }
 
 // GET /reg
@@ -286,16 +313,17 @@ static esp_err_t reg_handler(httpd_req_t *req)
   char *buf = NULL;
   if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-  // of the format param1=val1&param2=val2
-  if (httpd_query_key_value(buf, "reg",  _reg,  sizeof(_reg))  != ESP_OK ||
-	  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK ||
-      httpd_query_key_value(buf, "val",  _val,  sizeof(_val))  != ESP_OK)
-  {
-      free(buf);
-      httpd_resp_send_404(req);
-      return ESP_FAIL;
-  }
+	  // httpd_query_key_value is a helper function to obtain a URL query tag from
+	  // a query string of the format param1=val1&param2=val2
+	  if (httpd_query_key_value(buf, "reg",  _reg,  sizeof(_reg))  != ESP_OK ||
+		  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK ||
+		  httpd_query_key_value(buf, "val",  _val,  sizeof(_val))  != ESP_OK)
+	  {
+		  free(buf);
+		  httpd_resp_send_404(req);
+		  return ESP_FAIL;
+	  }
+
   free(buf);
 
   int reg = atoi(_reg);
@@ -323,13 +351,13 @@ static esp_err_t greg_handler(httpd_req_t *req)
   char *buf = NULL;
   if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-  if (httpd_query_key_value(buf, "reg", _reg, sizeof(_reg)) != ESP_OK ||
-	  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK)
-  {
-    free(buf);
-    httpd_resp_send_404(req);
-    return ESP_FAIL;
-  }
+	  if (httpd_query_key_value(buf, "reg", _reg, sizeof(_reg)) != ESP_OK ||
+		  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK)
+	  {
+		free(buf);
+		httpd_resp_send_404(req);
+		return ESP_FAIL;
+	  }
 
   free(buf);
 
@@ -395,13 +423,13 @@ static esp_err_t win_handler(httpd_req_t *req)
     char *buf = NULL;
     if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-	int startX = parse_get_var(buf, "sx", 0);
-	int offsetX = parse_get_var(buf, "offx", 0);
-	int offsetY = parse_get_var(buf, "offy", 0);
-	int totalX = parse_get_var(buf, "tx", 0);
-	int totalY = parse_get_var(buf, "ty", 0);
-	int outputX = parse_get_var(buf, "ox", 0);
-	int outputY = parse_get_var(buf, "oy", 0);
+		int startX = parse_get_var(buf, "sx", 0);
+		int offsetX = parse_get_var(buf, "offx", 0);
+		int offsetY = parse_get_var(buf, "offy", 0);
+		int totalX = parse_get_var(buf, "tx", 0);
+		int totalY = parse_get_var(buf, "ty", 0);
+		int outputX = parse_get_var(buf, "ox", 0);
+		int outputY = parse_get_var(buf, "oy", 0);
 
     free(buf);
 
@@ -575,6 +603,19 @@ void startControlAndStreamServers()
 		#endif
 	};
 
+	httpd_uri_t ctrl_mlx_uri = {
+		.uri = "/mlx",
+		.method = HTTP_GET,
+		.handler = mlx_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
+	};
+
 	httpd_uri_t ctrl_uploadserver_uri = {
 		.uri = "/uploadserver",
 		.method = HTTP_POST,
@@ -628,6 +669,8 @@ void startControlAndStreamServers()
         httpd_register_uri_handler(control_httpd, &ctrl_greg_uri);
         httpd_register_uri_handler(control_httpd, &ctrl_pll_uri);
         httpd_register_uri_handler(control_httpd, &ctrl_win_uri);
+
+		httpd_register_uri_handler(control_httpd, &ctrl_mlx_uri);
 
 		httpd_register_uri_handler(control_httpd, &ctrl_uploadserver_uri);
 

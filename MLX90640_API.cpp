@@ -28,13 +28,17 @@ uint8_t mlx_slaveAddr = 0;
 
 // params
 paramsMLX90640 mlx90640 = {};
+
 // frame populated by MLX90640_GetFrameData
 uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
+
 // frame processed by MLX90640_CalculateTo
 static float mlx90640_float_frame[MLX90640_pixelCOUNT];		// 32 coloumns x 24 rows
 
 // 80% of delta between samples
 int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
+
+float TambientReflected = 20.0f;
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -132,7 +136,6 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 mlx_fb_t MLX90640_fb_get()
 {
 	float Emmisivity        = 0.95f;
-	float TambientReflected = 20.0f;	// Celsius
 
 	mlx_fb_t fb = {};
 	
@@ -339,6 +342,13 @@ int MLX90640_GetCurMode()
     int mode = (controlRegister1 & 0x1000) >> 12;
     
     return mode; 
+}
+
+
+//------------------------------------------------------------------------------
+void MLX90640_SetAmbientReflected(float value)
+{
+	TambientReflected = value;
 }
 
 //------------------------------------------------------------------------------

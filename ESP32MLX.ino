@@ -23,6 +23,28 @@ const char *ap_password = "12345678";
 void startControlAndStreamServers();
 void setupLedFlash();
 
+// Callback when station connects
+void onClientConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
+	Serial.println(">> New client connected!");
+	Serial.print("MAC: ");
+	for (int i = 0; i < 6; i++) {
+		Serial.printf("%02X", info.wifi_ap_staconnected.mac[i]);
+		if (i < 5) Serial.print(":");
+	}
+	Serial.println();
+}
+
+// Callback when station disconnects
+void onClientDisconnected(WiFiEvent_t event, WiFiEventInfo_t info) {
+	Serial.println(">> Client disconnected!");
+	Serial.print("MAC: ");
+	for (int i = 0; i < 6; i++) {
+		Serial.printf("%02X", info.wifi_ap_stadisconnected.mac[i]);
+		if (i < 5) Serial.print(":");
+	}
+	Serial.println();
+}
+
 
 void setup() {
   
@@ -125,6 +147,10 @@ void setup() {
 		Serial.println(ap_ssid);
 		Serial.print("IP address: ");
 		Serial.println(WiFi.softAPIP());
+
+		// Register callback for AP client connection/disconnection
+		WiFi.onEvent(onClientConnected,    ARDUINO_EVENT_WIFI_AP_STACONNECTED);
+		WiFi.onEvent(onClientDisconnected, ARDUINO_EVENT_WIFI_AP_STADISCONNECTED);
 	}
 	else // Station mode (connect to a router)
 	{

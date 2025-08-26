@@ -24,7 +24,7 @@
                                 <div class="input-group" id="opacity-group">
                                     <label for="opacity">Thermap Opacity</label>
                                     <div class="range-min">0%</div>
-                                    <input type="range" id="opacity" min="0" max="100" value="40" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
+                                    <input type="range" id="opacity" min="0" max="100" value="50" title="50" oninput="this.title = this.value; document.getElementById('overlay-stream').style.opacity = this.value/100;">
                                     <div class="range-max">100%</div>
                                 </div>
                             </div>
@@ -33,7 +33,16 @@
                         <hr style="width:100%">
                         <label for="nav-toggle-mlx" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 params</label>
                         <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
-                        <section class="toggle-section"></section>
+
+                        <section class="toggle-section">
+                            <div class="input-group" id="ambient-reflected">
+                                <label for="ambReflected">Ambient Refl. Temp., C</label>
+                                <div class="text">
+                                    <input id="ambReflected" type="text" minlength="1" maxlength="5" size="2" value="20.0">
+                                </div>
+                                <button class="inline-button" id="ambReflectedBtn">Set</button>
+                            </div>
+                        </section>
 
                         <hr style="width:100%">
 
@@ -430,9 +439,8 @@
 
         <div id="tooltip" class="tooltip"></div>
 
-
-        <script src="scriptCaptureAndStream.js"></script>
         <script src="script.js"></script>
+        <script src="scriptCaptureAndStream.js"></script>
 
     </body>
 </html>

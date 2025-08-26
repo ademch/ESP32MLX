@@ -14,8 +14,8 @@
  * limitations under the License.
  *
  */
-#ifndef _MLX640_API_H_
-#define _MLX640_API_H_
+#ifndef _MLX90640_API_H_
+#define _MLX90640_API_H_
 
 #include "sys/time.h"
 
@@ -85,7 +85,8 @@
 		uint16_t height;            /*!< Height of the buffer in pixels */
 		struct timeval timestamp;   /*!< Timestamp since boot of the first DMA buffer of the frame */
 	} mlx_fb_t;
-    
+
+  
 	int MLX90640_Init(uint8_t _slaveAddr);
 
     int MLX90640_DumpEE(uint16_t *eeData);
@@ -113,5 +114,7 @@
 
     int MLX90640_SetInterleavedMode();
     int MLX90640_SetChessMode();
+
+	void MLX90640_SetAmbientReflected(float value);
     
 #endif

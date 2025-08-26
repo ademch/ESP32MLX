@@ -210,7 +210,7 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 	MLX90640_fb_return(fb);
 
 	int64_t fr_end = esp_timer_get_time();
-	log_i("BMP: %ubytes %ums", (uint32_t)(fb.len), (uint32_t)((fr_end - fr_start) >> 10));
+	log_i("RAW: %ubytes %ums", (uint32_t)(fb.len), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
 }

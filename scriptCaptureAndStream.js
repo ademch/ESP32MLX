@@ -132,66 +132,6 @@ function drawBMPBase64(frameData, width, height, elId)
 }
 
 
-function drawFrame(frameData)
-{
-    let width  = 32;
-    let height = 24;
-    let pix_count = width * height;
-
-    const canvas  = document.createElement("canvas");
-    canvas.width  = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-				    
-    // Reinterpret as Float32Array
-    const floats = new Float32Array(frameData.buffer, frameData.byteOffset, frameData.byteLength / 4);
-    const imgData = ctx.createImageData(32, 24);
-
-    //--Find min max--------------------------------------
-    let fMin =  Infinity;
-    let fMax = -Infinity;
-
-    for (let i = 0; i < pix_count; i++) {
-        if (floats[i] < fMin) fMin = floats[i];
-        if (floats[i] > fMax) fMax = floats[i];
-    }
-
-    //for (let i = 0; i < pix_count; i++) {
-    //    const [r, g, b] = ironbow(floats[i], fMin, fMax);
-    //    const j = i * 4;
-
-    //    // imgData.data is Uint8ClampedArray of length width x height x 4
-    //    imgData.data[j]     = r;
-    //    imgData.data[j + 1] = g;
-    //    imgData.data[j + 2] = b;
-    //    imgData.data[j + 3] = 255;
-    //}
-
-
-    let i = 0;
-    for (let y = height-1; y >= 0; y--)                 // flip vertically
-    {
-        for (let x = 0; x < width; x++)
-        {
-            let srcInd = y * width + (width-1 - x);     // mirror horizontally
-
-            const [r, g, b] = ironbow(floats[srcInd], fMin, fMax);
-
-            // imgData.data is Uint8ClampedArray of length width x height x 4
-            imgData.data[i*4]     = r;
-            imgData.data[i*4 + 1] = g;
-            imgData.data[i*4 + 2] = b;
-            imgData.data[i*4 + 3] = 255;
-            i++;
-        }
-    }
-                    
-    ctx.putImageData(imgData, 0, 0);
-
-    const viewOverlay = document.getElementById('overlay-stream');
-    viewOverlay.src = canvas.toDataURL();
-}
-
 function indexOfSubarray(haystack, needle)
 {
     if (needle.length === 0) return -1;
@@ -348,8 +288,8 @@ function handleMouseMove(e)
     const y = e.clientY - rect.top;
 
     // Scale to thermal array resolution
-    const scaledX = Math.floor(x / rect.width  * 32);
-    const scaledY = Math.floor(y / rect.height * 24);
+    const scaledX = 31 - Math.floor(x / rect.width  * 32);  // mirror
+    const scaledY = 23 - Math.floor(y / rect.height * 24);  // flip
 
     // Bounds check
     if (scaledX >= 0 && scaledX < 32 &&
@@ -357,9 +297,10 @@ function handleMouseMove(e)
     {
         const value = g_floats[scaledY * 32 + scaledX];
 
-        tooltip.textContent   = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
+        //tooltip.textContent   = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
+        tooltip.textContent   = (value).toFixed(1) + "\u00B0C";
         tooltip.style.left    = e.pageX + 12 + "px";
-        tooltip.style.top     = e.pageY + 18 + "px";
+        tooltip.style.top     = e.pageY - 40 + "px";
         tooltip.style.display = "block";
     }
     else {
@@ -386,8 +327,8 @@ viewOverlay.addEventListener("mouseenter", (e) => {
     mouseEventCopy.pageX   = e.pageX;
     mouseEventCopy.pageY   = e.pageY;
     
-    // call every 500 ms
-    timer = setInterval(() => handleMouseMove(mouseEventCopy), 500);
+    // call every XXX ms
+    timer = setInterval(() => handleMouseMove(mouseEventCopy), 1000);
 });
 
 viewOverlay.addEventListener("mouseleave", () => {
@@ -401,3 +342,95 @@ viewOverlay.addEventListener("mouseleave", () => {
 // Initialize images
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits also temperature array
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');
+
+
+const view          = document.getElementById('stream');
+const viewContainer = document.getElementById('stream-container');
+const stillButton   = document.getElementById('get-still');
+const streamButton  = document.getElementById('toggle-stream');
+const closeButton   = document.getElementById('close-stream');
+const saveButton    = document.getElementById('save-still');
+
+
+const startStream = () => {
+    view.src = `${streamUrl}/stream`;
+    //viewOverlay.src = `${streamOverlayUrl}/stream`;
+    show(viewContainer);
+
+    fetchMultipartBinary(`${streamOverlayUrl}/stream`);
+
+    streamButton.innerHTML = 'Stop Stream';
+}
+
+const stopStream = () => {
+    //window.stop();
+    //view.src = '';
+
+    const canvas  = document.createElement('canvas');
+    canvas.width  = view.naturalWidth;
+    canvas.height = view.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(view, 0, 0, canvas.width, canvas.height);
+
+    view.src = canvas.toDataURL('image/png');
+
+    if (controller) {
+        controller.abort(); // stops the fetch
+        controller = null;
+    }
+
+    streamButton.innerHTML = 'Start Stream';
+}
+
+
+// Attach actions to buttons
+stillButton.onclick = () => {
+    stopStream();
+    view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
+        
+    //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
+    fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
+
+    show(viewContainer);
+}
+
+closeButton.onclick = () => {
+    stopStream();
+    hide(viewContainer);
+}
+
+streamButton.onclick = () => {
+    const streamEnabled = streamButton.innerHTML === 'Stop Stream';
+					
+    if (streamEnabled)
+        stopStream();
+    else
+        startStream();
+}
+
+saveButton.onclick = () => {
+    var canvas = document.createElement("canvas");
+					
+    canvas.width  = view.width;
+    canvas.height = view.height;
+
+    document.body.appendChild(canvas);
+
+    var context = canvas.getContext('2d');
+    context.drawImage(view, 0, 0);
+    try {
+        var dataURL = canvas.toDataURL('image/jpeg');
+        saveButton.href = dataURL;
+        var d = new Date();
+        saveButton.download = d.getFullYear() +
+                              ("0" + (d.getMonth() + 1)).slice(-2) +
+                              ("0" + d.getDate()).slice(-2) +
+                              ("0" + d.getHours()).slice(-2) +
+                              ("0" + d.getMinutes()).slice(-2) +
+                              ("0" + d.getSeconds()).slice(-2) + ".jpg";
+    }
+    catch (e) {
+        console.error(e);
+    }
+    canvas.parentNode.removeChild(canvas);
+}
