@@ -39,6 +39,7 @@ static float mlx90640_float_frame[MLX90640_pixelCOUNT];		// 32 coloumns x 24 row
 int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
 
 float TambientReflected = 20.0f;
+float fEmissivity = 0.95f;
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -135,8 +136,6 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 
 mlx_fb_t MLX90640_fb_get()
 {
-	float Emmisivity        = 0.95f;
-
 	mlx_fb_t fb = {};
 	
 	// sample twice sequentially to be sure we get 0th and 1st subpages
@@ -150,7 +149,7 @@ mlx_fb_t MLX90640_fb_get()
 			return fb;	// empty fb
 		}
 
-		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, Emmisivity, TambientReflected, mlx90640_float_frame);
+		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, fEmissivity, TambientReflected, mlx90640_float_frame);
 	}
 
 	//MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
@@ -350,6 +349,12 @@ void MLX90640_SetAmbientReflected(float value)
 {
 	TambientReflected = value;
 }
+
+void MLX90640_SetEmissivity(float value)
+{
+	fEmissivity = value;
+}
+
 
 //------------------------------------------------------------------------------
 // Calculate Object Temperature from raw data

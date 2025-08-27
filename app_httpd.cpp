@@ -77,13 +77,14 @@ static esp_err_t control_handler(httpd_req_t *req)
 
 	  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
 	  // of the format param1=val1&param2=val2
+	  // `${baseHost}/control?var=${el.id}&val=${value}`;
 	  if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
 		  httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
 	  {
-		free(buf);
-		httpd_resp_send_404(req);
+		  free(buf);
+		  httpd_resp_send_404(req);
   
-		return ESP_FAIL;
+		  return ESP_FAIL;
 	  }
   
   free(buf);
@@ -147,8 +148,8 @@ static esp_err_t control_handler(httpd_req_t *req)
     res = s->set_ae_level(s, val);
   else if (!strcmp(variable, "led_intensity"))
   {
-    led_duty = val;
-    if (isStreaming) enable_LED(true);
+      led_duty = val;
+      if (isStreaming) enable_LED(true);
   }
   else {
       log_i("Unknown command: %s", variable);
@@ -280,25 +281,45 @@ static esp_err_t xclk_handler(httpd_req_t *req)
 // GET /mlx
 static esp_err_t mlx_handler(httpd_req_t *req)
 {
+	char variable[32];
+	char value[32];
+
 	char *buf = NULL;
 	if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-		// httpd_query_key_value is a helper function to obtain a URL query tag from
-		// a query string of the format param1=val1&param2=val2
-		char _ambReflected[16];
-		if (httpd_query_key_value(buf, "ambReflected", _ambReflected, sizeof(_ambReflected)) != ESP_OK)
+		// httpd_query_key_value is a helper function to obtain a URL query tag from a query string
+		// of the format param1=val1&param2=val2
+		//
+		// `${baseHost}/mlx?var=${el.id}&val=${value}`;
+		if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
+			httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
 		{
 			free(buf);
 			httpd_resp_send_404(req);
+
 			return ESP_FAIL;
 		}
 
 	free(buf);
 
-	float ambReflected = atof(_ambReflected);
-	log_i("_ambReflected: %f C", ambReflected);
+	if (!strcmp(variable, "ambReflected"))
+	{
+		float ambReflected = atof(value);
+		log_i("ambReflected: %f C", ambReflected);
 
-	MLX90640_SetAmbientReflected(ambReflected);
+		MLX90640_SetAmbientReflected(ambReflected);
+	}
+	else if (!strcmp(variable, "emissivity"))
+	{
+		float fEmissivity = atof(value);
+		log_i("emissivity: %f", fEmissivity);
+
+		MLX90640_SetEmissivity(fEmissivity);
+	}
+	else {
+		log_i("Unknown command: %s", variable);
+		return httpd_resp_send_500(req);
+	}
 
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 	return httpd_resp_send(req, NULL, 0);

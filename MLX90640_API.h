@@ -116,5 +116,6 @@
     int MLX90640_SetChessMode();
 
 	void MLX90640_SetAmbientReflected(float value);
+	void MLX90640_SetEmissivity(float value);
     
 #endif

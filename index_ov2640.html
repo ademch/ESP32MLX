@@ -356,7 +356,7 @@ input[type=text] {
     line-height: 16px;
     margin: 2px;
     padding: 1px 4px 2px 4px;
-    min-width: 100px;
+    min-width: 80px;
 }
 
 label.toggle-section-label {
@@ -457,12 +457,19 @@ input.toggle-section-button {
                         <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
 
                         <section class="toggle-section">
-                            <div class="input-group" id="ambient-reflected">
+                            <div class="input-group" id="ambient-reflected-group">
                                 <label for="ambReflected">Ambient Refl. Temp., C</label>
                                 <div class="text">
-                                    <input id="ambReflected" type="text" minlength="1" maxlength="5" size="2" value="20.0">
+                                    <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="20.0" style="width: 55px; margin-right: 10px;">
                                 </div>
                                 <button class="inline-button" id="ambReflectedBtn">Set</button>
+                            </div>
+                            <div class="input-group" id="emissivity-group">
+                                <label for="emissivity">Emissivity</label>
+                                <div class="text">
+                                    <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="0.95" style="width: 55px; margin-right: 10px;">
+                                </div>
+                                <button class="inline-button" id="emissivityBtn">Set</button>
                             </div>
                         </section>
 
@@ -833,8 +840,8 @@ input.toggle-section-button {
                         <section class="toggle-section">
 
                             <div class="group-grey-box">
-                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 300px;">
-                                <button id="upload-firmware-btn">Update...</button>
+                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 200px; display: inline-block;">
+                                <button id="upload-firmware-btn" style="display: inline-block;">Update...</button>
                             </div>
 
                             <div class="group-grey-box">
@@ -1061,8 +1068,7 @@ const wb          = $('wb_mode-group');
 
 document.addEventListener('DOMContentLoaded', function (event)
 {
-    const setRegButton = $('set-reg');
-    setRegButton.onclick = () => {
+    $('set-reg').onclick = () => {
         let reg   = parseInt($('reg-addr').value);
         let mask  = parseInt($('reg-mask').value);
         let value = parseInt($('reg-value').value);
@@ -1071,8 +1077,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const getRegButton = $('get-reg');
-    getRegButton.onclick = () => {
+    $('get-reg').onclick = () => {
         let reg   = parseInt($('get-reg-addr').value);
         let mask  = parseInt($('get-reg-mask').value);
         let value = $('get-reg-value');
@@ -1085,8 +1090,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const setXclkButton = $('set-xclk');
-    setXclkButton.onclick = () => {
+    $('set-xclk').onclick = () => {
         let xclk = parseInt($('xclk').value);
 
         fetchUrl(`${baseHost}/xclk?xclk=${xclk}`,
@@ -1094,17 +1098,23 @@ document.addEventListener('DOMContentLoaded', function (event)
                 );
     }
 
-    const mlxAmbReflectedBtn = $('ambReflectedBtn');
-    mlxAmbReflectedBtn.onclick = () => {
-        let ambRefl = parseInt($('ambReflected').value);
+    $('ambReflectedBtn').onclick = () => {
+        let ambRefl = parseFloat($('ambReflected').value);
 
-        fetchUrl(`${baseHost}/mlx?ambReflected=${ambRefl}`,
+        fetchUrl(`${baseHost}/mlx?var=ambReflected&val=${ambRefl}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const setResButton = $('set-resolution');
-    setResButton.onclick = () => {
+    $('emissivityBtn').onclick = () => {
+        let emiss = parseFloat($('emissivity').value);
+
+        fetchUrl(`${baseHost}/mlx?var=emissivity&val=${emiss}`,
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                );
+    }
+
+    $('set-resolution').onclick = () => {
         let start_x  = parseInt($('start-x').value);
         let offset_x = parseInt($('offset-x').value);
         let offset_y = parseInt($('offset-y').value);
@@ -1174,8 +1184,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
 
 
-    const uploadBtn = $("upload-firmware-btn");
-    uploadBtn.addEventListener("click", async () => {
+    $("upload-firmware-btn").addEventListener("click", async () => {
         let fileInput = $("firmware-fileInput");
 
         // Check if any file is selected
@@ -1223,8 +1232,7 @@ document.addEventListener('DOMContentLoaded', function (event)
     }); // upload
 
 
-    const rebootBtn = $("reboot-btn");
-    rebootBtn.addEventListener("click", () => {
+    $("reboot-btn").addEventListener("click", () => {
 
         if ( !confirm("Are you sure you want to reboot esp32 ?") ) return;
 
@@ -1736,7 +1744,7 @@ function drawDivToCanvas(divId, canvas)
     const style = getComputedStyle(div);
 
     const rect        = div.getBoundingClientRect();
-    const rectOverlay = viewOverlay.getBoundingClientRect();
+    const rectOverlay = $('overlay-stream').getBoundingClientRect();
 
     const left = rect.left - rectOverlay.left;
     const top  = rect.top  - rectOverlay.top;
@@ -1754,26 +1762,27 @@ function drawDivToCanvas(divId, canvas)
     ctx.beginPath();
         ctx.moveTo(left + borderRadius,         top);
         ctx.lineTo(left + width - borderRadius, top);
-        ctx.quadraticCurveTo(left + width, top, left + width, top + borderRadius);
-        ctx.lineTo(left + width, top + height - borderRadius);
-        ctx.quadraticCurveTo(left + width, top + height, left + width - borderRadius, top + height);
-        ctx.lineTo(left + borderRadius, top + height);
-        ctx.quadraticCurveTo(left, top + height, left, top + height - borderRadius);
-        ctx.lineTo(left, top + borderRadius);
-        ctx.quadraticCurveTo(left, top, left + borderRadius, top);
+        ctx.quadraticCurveTo(left + width,      top, left + width, top + borderRadius);
+        ctx.lineTo(left + width,                top + height - borderRadius);
+        ctx.quadraticCurveTo(left + width,      top + height, left + width - borderRadius, top + height);
+        ctx.lineTo(left + borderRadius,         top + height);
+        ctx.quadraticCurveTo(left,              top + height, left, top + height - borderRadius);
+        ctx.lineTo(left,                        top + borderRadius);
+        ctx.quadraticCurveTo(left, top,         left + borderRadius, top);
     ctx.closePath();
     ctx.fill();
 
     // Draw border
-    if (borderWidth > 0) {
+    if (borderWidth > 0)
+    {
         ctx.strokeStyle = style.borderColor;
-        ctx.lineWidth = borderWidth;
+        ctx.lineWidth   = borderWidth;
         ctx.stroke();
     }
 
     // Draw text
-    ctx.fillStyle = style.color;
-    ctx.font = `${style.fontSize} ${style.fontFamily}`;
+    ctx.fillStyle    = style.color;
+    ctx.font         = `${style.fontSize} ${style.fontFamily}`;
     ctx.textBaseline = 'top';
     ctx.fillText(div.textContent.trim(), left + paddingLeft + borderWidth, top + paddingTop + borderWidth + 2);
 }

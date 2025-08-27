@@ -35,12 +35,19 @@
                         <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
 
                         <section class="toggle-section">
-                            <div class="input-group" id="ambient-reflected">
+                            <div class="input-group" id="ambient-reflected-group">
                                 <label for="ambReflected">Ambient Refl. Temp., C</label>
                                 <div class="text">
-                                    <input id="ambReflected" type="text" minlength="1" maxlength="5" size="2" value="20.0">
+                                    <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="20.0" style="width: 55px; margin-right: 10px;">
                                 </div>
                                 <button class="inline-button" id="ambReflectedBtn">Set</button>
+                            </div>
+                            <div class="input-group" id="emissivity-group">
+                                <label for="emissivity">Emissivity</label>
+                                <div class="text">
+                                    <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="0.95" style="width: 55px; margin-right: 10px;">
+                                </div>
+                                <button class="inline-button" id="emissivityBtn">Set</button>
                             </div>
                         </section>
 
@@ -411,8 +418,8 @@
                         <section class="toggle-section">
 
                             <div class="group-grey-box">
-                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 300px;">
-                                <button id="upload-firmware-btn">Update...</button>
+                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 200px; display: inline-block;">
+                                <button id="upload-firmware-btn" style="display: inline-block;">Update...</button>
                             </div>
 
                             <div class="group-grey-box">

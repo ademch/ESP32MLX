@@ -191,8 +191,7 @@ const wb          = $('wb_mode-group');
 
 document.addEventListener('DOMContentLoaded', function (event)
 {
-    const setRegButton = $('set-reg');
-    setRegButton.onclick = () => {
+    $('set-reg').onclick = () => {
         let reg   = parseInt($('reg-addr').value);
         let mask  = parseInt($('reg-mask').value);
         let value = parseInt($('reg-value').value);
@@ -201,8 +200,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const getRegButton = $('get-reg');
-    getRegButton.onclick = () => {
+    $('get-reg').onclick = () => {
         let reg   = parseInt($('get-reg-addr').value);
         let mask  = parseInt($('get-reg-mask').value);
         let value = $('get-reg-value');
@@ -215,8 +213,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
     }
 
-    const setXclkButton = $('set-xclk');
-    setXclkButton.onclick = () => {
+    $('set-xclk').onclick = () => {
         let xclk = parseInt($('xclk').value);
 
         fetchUrl(`${baseHost}/xclk?xclk=${xclk}`,
@@ -224,17 +221,23 @@ document.addEventListener('DOMContentLoaded', function (event)
                 );
     }
 
-    const mlxAmbReflectedBtn = $('ambReflectedBtn');
-    mlxAmbReflectedBtn.onclick = () => {
-        let ambRefl = parseInt($('ambReflected').value);
+    $('ambReflectedBtn').onclick = () => {
+        let ambRefl = parseFloat($('ambReflected').value);
 
-        fetchUrl(`${baseHost}/mlx?ambReflected=${ambRefl}`,
+        fetchUrl(`${baseHost}/mlx?var=ambReflected&val=${ambRefl}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
                 );
     }
 
-    const setResButton = $('set-resolution');
-    setResButton.onclick = () => {
+    $('emissivityBtn').onclick = () => {
+        let emiss = parseFloat($('emissivity').value);
+
+        fetchUrl(`${baseHost}/mlx?var=emissivity&val=${emiss}`,
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                );
+    }
+
+    $('set-resolution').onclick = () => {
         let start_x  = parseInt($('start-x').value);
         let offset_x = parseInt($('offset-x').value);
         let offset_y = parseInt($('offset-y').value);
@@ -304,8 +307,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         });
 
 
-    const uploadBtn = $("upload-firmware-btn");
-    uploadBtn.addEventListener("click", async () => {
+    $("upload-firmware-btn").addEventListener("click", async () => {
         let fileInput = $("firmware-fileInput");
 
         // Check if any file is selected
@@ -353,8 +355,7 @@ document.addEventListener('DOMContentLoaded', function (event)
     }); // upload
 
 
-    const rebootBtn = $("reboot-btn");
-    rebootBtn.addEventListener("click", () => {
+    $("reboot-btn").addEventListener("click", () => {
 
         if ( !confirm("Are you sure you want to reboot esp32 ?") ) return;
 

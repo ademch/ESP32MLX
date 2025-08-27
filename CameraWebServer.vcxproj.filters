@@ -31,11 +31,11 @@
     <Filter Include="Header Files\External\FS">
       <UniqueIdentifier>{fce39161-c530-4ef7-ba82-49129502eb2f}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\External\CAMERA\ImageConverion">
-      <UniqueIdentifier>{79b11a5c-7c03-43b6-9b54-c245378743a6}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Source Files\HTML">
       <UniqueIdentifier>{b7e5da15-b194-44b3-b32c-0f9239532c84}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\External\CAMERA\ImageConversion">
+      <UniqueIdentifier>{79b11a5c-7c03-43b6-9b54-c245378743a6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -76,10 +76,10 @@
       <Filter>Header Files\External\FS</Filter>
     </ClCompile>
     <ClCompile Include="esp32-camera-master\conversions\to_bmp.c">
-      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
+      <Filter>Header Files\External\CAMERA\ImageConversion</Filter>
     </ClCompile>
     <ClCompile Include="esp32-camera-master\conversions\to_jpg.cpp">
-      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
+      <Filter>Header Files\External\CAMERA\ImageConversion</Filter>
     </ClCompile>
     <ClCompile Include="httpd_firmware.cpp">
       <Filter>Source Files</Filter>
@@ -147,7 +147,7 @@
       <Filter>Header Files\External\FS</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\AppData\Local\Arduino15\packages\esp32\tools\esp32-arduino-libs\idf-release_v5.5-b66b5448-v1\esp32\include\espressif__esp32-camera\conversions\include\img_converters.h">
-      <Filter>Header Files\External\CAMERA\ImageConverion</Filter>
+      <Filter>Header Files\External\CAMERA\ImageConversion</Filter>
     </ClInclude>
     <ClInclude Include="httpd_firmware.h">
       <Filter>Header Files</Filter>
