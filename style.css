@@ -395,3 +395,29 @@ input.toggle-section-button {
     display: none;
     z-index: 1000;
 }
+
+.tooltipMin {
+    position: fixed;
+    background: rgba(0,0,255,0.5);
+    border: 1px solid black;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 1001;
+}
+
+.tooltipMax {
+    position: fixed;
+    background: rgba(255,0,0,0.5);
+    border: 1px solid black;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 1002;
+}

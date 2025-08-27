@@ -187,5 +187,8 @@
     <None Include="style.css">
       <Filter>Source Files\HTML</Filter>
     </None>
+    <None Include="save.js">
+      <Filter>Source Files\HTML</Filter>
+    </None>
   </ItemGroup>
 </Project>

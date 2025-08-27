@@ -342,6 +342,9 @@ document.addEventListener('DOMContentLoaded', function (event)
             const text = await response.text();
 
             alert("Server says: " + text);
+
+            // Reload the page by adding a timestamp to force fresh load
+            window.location.href = window.location.href.split('?')[0] + '?_=' + new Date().getTime();
         }
         catch (err) {
             alert("Error: " + err.message);

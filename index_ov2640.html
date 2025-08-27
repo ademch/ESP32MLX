@@ -400,6 +400,32 @@ input.toggle-section-button {
     pointer-events: none;
     display: none;
     z-index: 1000;
+}
+
+.tooltipMin {
+    position: fixed;
+    background: rgba(0,0,255,0.5);
+    border: 1px solid black;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 1001;
+}
+
+.tooltipMax {
+    position: fixed;
+    background: rgba(255,0,0,0.5);
+    border: 1px solid black;
+    color: white;
+    padding: 3px 5px;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    display: none;
+    z-index: 1002;
 }</style>
     </head>
     <body>
@@ -413,8 +439,8 @@ input.toggle-section-button {
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="capture-image-btn" style="font-size: 16px;">Capture Image</button>
-                            <button id="toggle-stream-btn" style="font-size: 16px;">Start Stream</button>
+                            <button id="capture-image-btn" style="font-size: 16px; background: #00AA00;">Capture Image</button>
+                            <button id="toggle-stream-btn" style="font-size: 16px; background: #00AA00;">Start Stream</button>
 
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
@@ -831,13 +857,16 @@ input.toggle-section-button {
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
                         <a id="save-still-btn" href="#" class="button save" download="capture.jpg">Save</a>
-                      </div>
+                    </div>
                 </figure>
 
             </div>
         </section>
 
         <div id="tooltip" class="tooltip"></div>
+
+        <div id="tooltipMin" class="tooltipMin"></div>
+        <div id="tooltipMax" class="tooltipMax"></div>
 
         <script>
 const $ = (id) => document.getElementById(id);
@@ -1183,6 +1212,9 @@ document.addEventListener('DOMContentLoaded', function (event)
             const text = await response.text();
 
             alert("Server says: " + text);
+
+            // Reload the page by adding a timestamp to force fresh load
+            window.location.href = window.location.href.split('?')[0] + '?_=' + new Date().getTime();
         }
         catch (err) {
             alert("Error: " + err.message);
@@ -1281,6 +1313,15 @@ function ironbow(value, minVal, maxVal)
     return [r, g, b]; // array [R,G,B]
 }
 
+let frameMinTemp = 0;
+let frameMaxTemp = 0;
+
+let fMinXcoord = 0;
+let fMinYcoord = 0;
+let fMaxXcoord = 0;
+let fMaxYcoord = 0;
+
+
 // width has to be multiple of 4 bytes
 function drawBMPBase64(frameData, width, height, elId)
 {
@@ -1333,15 +1374,31 @@ function drawBMPBase64(frameData, width, height, elId)
     let fMin =  Infinity;
     let fMax = -Infinity;
 
-    for (let i = 0; i < pix_count; i++) {
-        if (floats[i] < fMin) fMin = floats[i];
-        if (floats[i] > fMax) fMax = floats[i];
+    for (let y=0; y < height; y++) {
+        for (let x=0; x < width; x++)
+        {
+            let srcInd = y * width + x;
+
+            if (floats[srcInd] < fMin) {
+                fMin = floats[srcInd];
+                fMinXcoord = width-1  - x;
+                fMinYcoord = height-1 - y;
+            }
+            if (floats[srcInd] > fMax) {
+                fMax = floats[srcInd];
+                fMaxXcoord = width-1  - x;
+                fMaxYcoord = height-1 - y;
+            }
+        }
     }
 
+    frameMinTemp = fMin;
+    frameMaxTemp = fMax;
+
     let i = 0;
-    for (let y = 0; y < height; y++)
+    for (let y=0; y < height; y++)
     {
-        for (let x = 0; x < width; x++)
+        for (let x=0; x < width; x++)
         {
             let srcInd = y * width + (width-1 - x);     // mirror horizontally
 
@@ -1359,7 +1416,7 @@ function drawBMPBase64(frameData, width, height, elId)
 
     function uint8ToBase64(uint8) {
         let binary = "";
-        for (let i = 0; i < uint8.length; i++) {
+        for (let i=0; i < uint8.length; i++) {
             binary += String.fromCharCode(uint8[i]);
         }
         return btoa(binary);
@@ -1509,12 +1566,10 @@ const tooltip     = $('tooltip');
 
 
 // a timer and a global object storing mouse coords so timer cunc can access last known coords
-let timer = null;
+let timerMouseMove = null;
 let mouseEventCopy = {
     clientX: 0,
-    clientY: 0,
-    pageX:   0,
-    pageY:   0
+    clientY: 0
 };
 
 function handleMouseMove(e)
@@ -1537,8 +1592,8 @@ function handleMouseMove(e)
 
         //tooltip.textContent   = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
         tooltip.textContent   = (value).toFixed(1) + "\u00B0C";
-        tooltip.style.left    = e.pageX + 12 + "px";
-        tooltip.style.top     = e.pageY - 40 + "px";
+        tooltip.style.left    = e.clientX + 16 + "px";
+        tooltip.style.top     = e.clientY - 32 + "px";
         tooltip.style.display = "block";
     }
     else {
@@ -1551,8 +1606,6 @@ viewOverlay.addEventListener("mousemove", (e) => {
     // update coords
     mouseEventCopy.clientX = e.clientX;
     mouseEventCopy.clientY = e.clientY;
-    mouseEventCopy.pageX   = e.pageX;
-    mouseEventCopy.pageY   = e.pageY;
 
     handleMouseMove(mouseEventCopy);
 });
@@ -1562,27 +1615,65 @@ viewOverlay.addEventListener("mouseenter", (e) => {
     // update coords
     mouseEventCopy.clientX = e.clientX;
     mouseEventCopy.clientY = e.clientY;
-    mouseEventCopy.pageX   = e.pageX;
-    mouseEventCopy.pageY   = e.pageY;
     
     // call every XXX ms
-    timer = setInterval(() => handleMouseMove(mouseEventCopy), 1000);
+    timerMouseMove = setInterval(() => handleMouseMove(mouseEventCopy), 1000);
 });
 
 viewOverlay.addEventListener("mouseleave", () => {
     tooltip.style.display = "none";
 
-    clearInterval(timer);
-    timer = null;
+    clearInterval(timerMouseMove);
+    timerMouseMove = null;
 });
 
+
+function handleMinMaxTooltips()
+{
+    const rect = viewOverlay.getBoundingClientRect();
+
+    const scaleX = rect.width  / 32;
+    const scaleY = rect.height / 24;
+
+    //================================================================
+
+    let x = rect.left + fMinXcoord*scaleX;
+    let y = rect.top  + fMinYcoord*scaleY;
+
+    // Bounds check
+    if (fMinXcoord >= 0 && fMinXcoord < 32 &&
+        fMinYcoord >= 0 && fMinYcoord < 24)
+    {
+        tooltipMin.textContent   = (frameMinTemp).toFixed(1) + "\u00B0C";
+        tooltipMin.style.left    = x + "px";
+        tooltipMin.style.top     = y + "px";
+        tooltipMin.style.display = "block";
+    }
+
+    //==================================================================
+
+    x = rect.left + fMaxXcoord*scaleX;
+    y = rect.top  + fMaxYcoord*scaleY;
+
+    // Bounds check
+    if (fMaxXcoord >= 0 && fMaxXcoord < 32 &&
+        fMaxYcoord >= 0 && fMaxYcoord < 24)
+    {
+        tooltipMax.textContent   = (frameMaxTemp).toFixed(1) + "\u00B0C";
+        tooltipMax.style.left    = x + 5 + "px";
+        tooltipMax.style.top     = y + 5 + "px";
+        tooltipMax.style.display = "block";
+    }
+}
+
+setInterval(() => handleMinMaxTooltips(), 2000);
 
 // Initialize images
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits also temperature array
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');
 
 
-const view          = $('stream');
+const view = $('stream');
 
 const startStream = () => {
     view.src = `${streamUrl}/stream`;
@@ -1591,6 +1682,7 @@ const startStream = () => {
     fetchMultipartBinary(`${streamOverlayUrl}/stream`);
 
     $('toggle-stream-btn').innerHTML = 'Stop Stream';
+    $('toggle-stream-btn').style.background = '#ff3034';
 }
 
 const stopStream = () => {
@@ -1611,13 +1703,14 @@ const stopStream = () => {
     }
 
     $('toggle-stream-btn').innerHTML = 'Start Stream';
+    $('toggle-stream-btn').style.background = '#00AA00';
 }
 
 
 // Attach actions to buttons
 $('capture-image-btn').onclick = () => {
     stopStream();
-    view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
+    view.src = `${baseHost}/capture2640?_cb=${Date.now()}`;
         
     //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
     fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
@@ -1631,10 +1724,64 @@ $('toggle-stream-btn').onclick = () => {
     else
         startStream();
 }
+</script>
+        <script>
+
+function drawDivToCanvas(divId, canvas)
+{
+    const div = $(divId);
+    if (!div) return;
+
+    const ctx   = canvas.getContext("2d");
+    const style = getComputedStyle(div);
+
+    const rect        = div.getBoundingClientRect();
+    const rectOverlay = viewOverlay.getBoundingClientRect();
+
+    const left = rect.left - rectOverlay.left;
+    const top  = rect.top  - rectOverlay.top;
+
+    const width  = rect.width;
+    const height = rect.height;
+
+    const paddingTop   = parseFloat(style.paddingTop);
+    const paddingLeft  = parseFloat(style.paddingLeft);
+    const borderWidth  = parseFloat(style.borderTopWidth);
+    const borderRadius = parseFloat(style.borderTopLeftRadius);
+
+    // Draw background with border radius
+    ctx.fillStyle = style.backgroundColor;
+    ctx.beginPath();
+        ctx.moveTo(left + borderRadius,         top);
+        ctx.lineTo(left + width - borderRadius, top);
+        ctx.quadraticCurveTo(left + width, top, left + width, top + borderRadius);
+        ctx.lineTo(left + width, top + height - borderRadius);
+        ctx.quadraticCurveTo(left + width, top + height, left + width - borderRadius, top + height);
+        ctx.lineTo(left + borderRadius, top + height);
+        ctx.quadraticCurveTo(left, top + height, left, top + height - borderRadius);
+        ctx.lineTo(left, top + borderRadius);
+        ctx.quadraticCurveTo(left, top, left + borderRadius, top);
+    ctx.closePath();
+    ctx.fill();
+
+    // Draw border
+    if (borderWidth > 0) {
+        ctx.strokeStyle = style.borderColor;
+        ctx.lineWidth = borderWidth;
+        ctx.stroke();
+    }
+
+    // Draw text
+    ctx.fillStyle = style.color;
+    ctx.font = `${style.fontSize} ${style.fontFamily}`;
+    ctx.textBaseline = 'top';
+    ctx.fillText(div.textContent.trim(), left + paddingLeft + borderWidth, top + paddingTop + borderWidth + 2);
+}
+
 
 $('save-still-btn').onclick = () => {
     var canvas = document.createElement("canvas");
-					
+
     canvas.width  = view.width;
     canvas.height = view.height;
 
@@ -1644,9 +1791,12 @@ $('save-still-btn').onclick = () => {
 
     context.drawImage(view, 0, 0, canvas.width, canvas.height);
 
-    context.globalAlpha = $('opacity-slider').value/100;
+    context.globalAlpha = $('opacity-slider').value / 100;
         context.drawImage(viewOverlay, 0, 0, canvas.width, canvas.height);
     context.globalAlpha = 1.0;
+
+    drawDivToCanvas('tooltipMin', canvas);
+    drawDivToCanvas('tooltipMax', canvas);
 
     try {
         var dataURL = canvas.toDataURL('image/png');
@@ -1655,8 +1805,8 @@ $('save-still-btn').onclick = () => {
         $('save-still-btn').download = d.getFullYear() + "-" +
                                       ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
                                       ("0" + d.getDate()).slice(-2) + "_" +
-                                      ("0" + d.getHours()).slice(-2) +  "h" +
-                                      ("0" + d.getMinutes()).slice(-2) +  "m" +
+                                      ("0" + d.getHours()).slice(-2) + "h" +
+                                      ("0" + d.getMinutes()).slice(-2) + "m" +
                                       ("0" + d.getSeconds()).slice(-2) + "s.png";
     }
     catch (e) {

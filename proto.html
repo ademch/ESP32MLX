@@ -17,8 +17,8 @@
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="capture-image-btn" style="font-size: 16px;">Capture Image</button>
-                            <button id="toggle-stream-btn" style="font-size: 16px;">Start Stream</button>
+                            <button id="capture-image-btn" style="font-size: 16px; background: #00AA00;">Capture Image</button>
+                            <button id="toggle-stream-btn" style="font-size: 16px; background: #00AA00;">Start Stream</button>
 
                             <div class="group-grey-box">
                                 <div class="input-group" id="opacity-group">
@@ -435,7 +435,7 @@
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
                         <a id="save-still-btn" href="#" class="button save" download="capture.jpg">Save</a>
-                      </div>
+                    </div>
                 </figure>
 
             </div>
@@ -443,8 +443,12 @@
 
         <div id="tooltip" class="tooltip"></div>
 
+        <div id="tooltipMin" class="tooltipMin"></div>
+        <div id="tooltipMax" class="tooltipMax"></div>
+
         <script src="script.js"></script>
         <script src="scriptCaptureAndStream.js"></script>
+        <script src="save.js"></script>
 
     </body>
 </html>

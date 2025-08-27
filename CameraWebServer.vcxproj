@@ -158,6 +158,7 @@
   <ItemGroup>
     <None Include="ESP32MLX.ino" />
     <None Include="proto.html" />
+    <None Include="save.js" />
     <None Include="script.js" />
     <None Include="scriptCaptureAndStream.js" />
     <None Include="style.css" />

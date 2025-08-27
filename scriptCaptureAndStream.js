@@ -39,6 +39,15 @@ function ironbow(value, minVal, maxVal)
     return [r, g, b]; // array [R,G,B]
 }
 
+let frameMinTemp = 0;
+let frameMaxTemp = 0;
+
+let fMinXcoord = 0;
+let fMinYcoord = 0;
+let fMaxXcoord = 0;
+let fMaxYcoord = 0;
+
+
 // width has to be multiple of 4 bytes
 function drawBMPBase64(frameData, width, height, elId)
 {
@@ -91,15 +100,31 @@ function drawBMPBase64(frameData, width, height, elId)
     let fMin =  Infinity;
     let fMax = -Infinity;
 
-    for (let i = 0; i < pix_count; i++) {
-        if (floats[i] < fMin) fMin = floats[i];
-        if (floats[i] > fMax) fMax = floats[i];
+    for (let y=0; y < height; y++) {
+        for (let x=0; x < width; x++)
+        {
+            let srcInd = y * width + x;
+
+            if (floats[srcInd] < fMin) {
+                fMin = floats[srcInd];
+                fMinXcoord = width-1  - x;
+                fMinYcoord = height-1 - y;
+            }
+            if (floats[srcInd] > fMax) {
+                fMax = floats[srcInd];
+                fMaxXcoord = width-1  - x;
+                fMaxYcoord = height-1 - y;
+            }
+        }
     }
 
+    frameMinTemp = fMin;
+    frameMaxTemp = fMax;
+
     let i = 0;
-    for (let y = 0; y < height; y++)
+    for (let y=0; y < height; y++)
     {
-        for (let x = 0; x < width; x++)
+        for (let x=0; x < width; x++)
         {
             let srcInd = y * width + (width-1 - x);     // mirror horizontally
 
@@ -117,7 +142,7 @@ function drawBMPBase64(frameData, width, height, elId)
 
     function uint8ToBase64(uint8) {
         let binary = "";
-        for (let i = 0; i < uint8.length; i++) {
+        for (let i=0; i < uint8.length; i++) {
             binary += String.fromCharCode(uint8[i]);
         }
         return btoa(binary);
@@ -267,12 +292,10 @@ const tooltip     = $('tooltip');
 
 
 // a timer and a global object storing mouse coords so timer cunc can access last known coords
-let timer = null;
+let timerMouseMove = null;
 let mouseEventCopy = {
     clientX: 0,
-    clientY: 0,
-    pageX:   0,
-    pageY:   0
+    clientY: 0
 };
 
 function handleMouseMove(e)
@@ -295,8 +318,8 @@ function handleMouseMove(e)
 
         //tooltip.textContent   = `(${scaledX},${scaledY}) = ` + (value).toFixed(1) + "\u00B0C";
         tooltip.textContent   = (value).toFixed(1) + "\u00B0C";
-        tooltip.style.left    = e.pageX + 12 + "px";
-        tooltip.style.top     = e.pageY - 40 + "px";
+        tooltip.style.left    = e.clientX + 16 + "px";
+        tooltip.style.top     = e.clientY - 32 + "px";
         tooltip.style.display = "block";
     }
     else {
@@ -309,8 +332,6 @@ viewOverlay.addEventListener("mousemove", (e) => {
     // update coords
     mouseEventCopy.clientX = e.clientX;
     mouseEventCopy.clientY = e.clientY;
-    mouseEventCopy.pageX   = e.pageX;
-    mouseEventCopy.pageY   = e.pageY;
 
     handleMouseMove(mouseEventCopy);
 });
@@ -320,27 +341,65 @@ viewOverlay.addEventListener("mouseenter", (e) => {
     // update coords
     mouseEventCopy.clientX = e.clientX;
     mouseEventCopy.clientY = e.clientY;
-    mouseEventCopy.pageX   = e.pageX;
-    mouseEventCopy.pageY   = e.pageY;
     
     // call every XXX ms
-    timer = setInterval(() => handleMouseMove(mouseEventCopy), 1000);
+    timerMouseMove = setInterval(() => handleMouseMove(mouseEventCopy), 1000);
 });
 
 viewOverlay.addEventListener("mouseleave", () => {
     tooltip.style.display = "none";
 
-    clearInterval(timer);
-    timer = null;
+    clearInterval(timerMouseMove);
+    timerMouseMove = null;
 });
 
+
+function handleMinMaxTooltips()
+{
+    const rect = viewOverlay.getBoundingClientRect();
+
+    const scaleX = rect.width  / 32;
+    const scaleY = rect.height / 24;
+
+    //================================================================
+
+    let x = rect.left + fMinXcoord*scaleX;
+    let y = rect.top  + fMinYcoord*scaleY;
+
+    // Bounds check
+    if (fMinXcoord >= 0 && fMinXcoord < 32 &&
+        fMinYcoord >= 0 && fMinYcoord < 24)
+    {
+        tooltipMin.textContent   = (frameMinTemp).toFixed(1) + "\u00B0C";
+        tooltipMin.style.left    = x + "px";
+        tooltipMin.style.top     = y + "px";
+        tooltipMin.style.display = "block";
+    }
+
+    //==================================================================
+
+    x = rect.left + fMaxXcoord*scaleX;
+    y = rect.top  + fMaxYcoord*scaleY;
+
+    // Bounds check
+    if (fMaxXcoord >= 0 && fMaxXcoord < 32 &&
+        fMaxYcoord >= 0 && fMaxYcoord < 24)
+    {
+        tooltipMax.textContent   = (frameMaxTemp).toFixed(1) + "\u00B0C";
+        tooltipMax.style.left    = x + 5 + "px";
+        tooltipMax.style.top     = y + 5 + "px";
+        tooltipMax.style.display = "block";
+    }
+}
+
+setInterval(() => handleMinMaxTooltips(), 2000);
 
 // Initialize images
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'overlay-stream');   // inits also temperature array
 drawBMPBase64(new Uint8Array(32*24*4), 32, 24, 'stream');
 
 
-const view          = $('stream');
+const view = $('stream');
 
 const startStream = () => {
     view.src = `${streamUrl}/stream`;
@@ -349,6 +408,7 @@ const startStream = () => {
     fetchMultipartBinary(`${streamOverlayUrl}/stream`);
 
     $('toggle-stream-btn').innerHTML = 'Stop Stream';
+    $('toggle-stream-btn').style.background = '#ff3034';
 }
 
 const stopStream = () => {
@@ -369,13 +429,14 @@ const stopStream = () => {
     }
 
     $('toggle-stream-btn').innerHTML = 'Start Stream';
+    $('toggle-stream-btn').style.background = '#00AA00';
 }
 
 
 // Attach actions to buttons
 $('capture-image-btn').onclick = () => {
     stopStream();
-    view.src        = `${baseHost}/capture2640?_cb=${Date.now()}`;
+    view.src = `${baseHost}/capture2640?_cb=${Date.now()}`;
         
     //viewOverlay.src = `${baseHost}/capture90640?_cb=${Date.now()}`;
     fetchBinary(`${baseHost}/capture90640?_cb=${Date.now()}`);
@@ -388,37 +449,4 @@ $('toggle-stream-btn').onclick = () => {
         stopStream();
     else
         startStream();
-}
-
-$('save-still-btn').onclick = () => {
-    var canvas = document.createElement("canvas");
-					
-    canvas.width  = view.width;
-    canvas.height = view.height;
-
-    document.body.appendChild(canvas);
-
-    var context = canvas.getContext('2d');
-
-    context.drawImage(view, 0, 0, canvas.width, canvas.height);
-
-    context.globalAlpha = $('opacity-slider').value/100;
-        context.drawImage(viewOverlay, 0, 0, canvas.width, canvas.height);
-    context.globalAlpha = 1.0;
-
-    try {
-        var dataURL = canvas.toDataURL('image/png');
-        $('save-still-btn').href = dataURL;
-        var d = new Date();
-        $('save-still-btn').download = d.getFullYear() + "-" +
-                                      ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
-                                      ("0" + d.getDate()).slice(-2) + "_" +
-                                      ("0" + d.getHours()).slice(-2) +  "h" +
-                                      ("0" + d.getMinutes()).slice(-2) +  "m" +
-                                      ("0" + d.getSeconds()).slice(-2) + "s.png";
-    }
-    catch (e) {
-        console.error(e);
-    }
-    canvas.parentNode.removeChild(canvas);
 }
