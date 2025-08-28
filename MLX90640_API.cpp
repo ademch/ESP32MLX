@@ -372,6 +372,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 
 	float       vdd  = MLX90640_GetVdd(frameData, params);
     float       ta   = MLX90640_GetTa(frameData, params);
+
     float       ta4  = pow((ta + 273.15), (double)4);
     float       tr4  = pow((tr + 273.15), (double)4);
     float       taTr = tr4 - (tr4-ta4)/emissivity;
@@ -391,7 +392,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
   
 //------------------------- To calculation -------------------------------------    
 	// 0x80 chess pattern or 0x00 interleaved
-	uint8_t mode = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
+	uint8_t modeFrame = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
     
 	float irDataCP[2];
 	irDataCP[0] = frameData[MLX90640_RAM_CP0];
@@ -407,7 +408,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
     
 	irDataCP[0] = irDataCP[0] - params->cpOffset[0] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
     
-	if (mode ==  params->calibrationModeEE)
+	if (modeFrame ==  params->calibrationModeEE)
         irDataCP[1] = irDataCP[1] - params->cpOffset[1] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
     else
         irDataCP[1] = irDataCP[1] - (params->cpOffset[1] + params->ilChessC[0]) * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
@@ -419,9 +420,9 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 		int8_t convPattern   = ((pixelNumber + 2) / 4 - (pixelNumber + 3) / 4 + (pixelNumber + 1) / 4 - pixelNumber / 4) * (1 - 2 * intlvdPattern);
         
 		int8_t pattern;
-		if (mode == 0)
+		if (modeFrame == 0)	// interleaved
             pattern = intlvdPattern; 
-        else 
+        else				// chess
             pattern = chessPattern;          
         
         if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
@@ -434,7 +435,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
             irData = irData * gain;
             irData = irData - params->offset[pixelNumber]*(1 + params->kta[pixelNumber]*(ta - 25))*(1 + params->kv[pixelNumber]*(vdd - 3.3));
             
-			if (mode !=  params->calibrationModeEE)
+			if (modeFrame !=  params->calibrationModeEE)
                 irData = irData + params->ilChessC[2] * (2 * intlvdPattern - 1) - params->ilChessC[1] * convPattern; 
             
             irData = irData / emissivity;
@@ -470,6 +471,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *afResult)
 {
 	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
+
     float        vdd = MLX90640_GetVdd(frameData, params);
     float        ta  = MLX90640_GetTa(frameData, params);
     
@@ -488,6 +490,7 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 
     for (int i = 0; i < 2; i++)
     {
+		// observe sign
         if (irDataCP[i] > 32767) irDataCP[i] = irDataCP[i] - 65536;
 
         // 11.2.2.6.1
@@ -496,6 +499,7 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 
 	// 11.2.2.6.2 Compensating offset, Ta, Vdd of CP pixel
 	irDataCP[0] = irDataCP[0] - params->cpOffset[0] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
+
 	if (modeFrame ==  params->calibrationModeEE)	// chess
         irDataCP[1] = irDataCP[1] - params->cpOffset[1] * (1 + params->cpKta * (ta - 25)) * (1 + params->cpKv * (vdd - 3.3));
     else                                            // interleaved
@@ -529,14 +533,14 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 			// 11.1.3.1
 			if (modeFrame !=  params->calibrationModeEE)
                 irData = irData + params->ilChessC[2] * (2 * intlvdPattern - 1) - params->ilChessC[1] * convPattern; 
-            
+ 
 			// 11.2.2.7
             irData = irData - params->tgc * irDataCP[subPage];
-            
+ 
 			// 11.2.2.8
 			float alphaCompensated;
             alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
-            
+ 
             afResult[pixelNumber] = irData / alphaCompensated;
         }
     }
