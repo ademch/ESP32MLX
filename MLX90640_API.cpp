@@ -16,9 +16,7 @@
  */
 #include "MLX90640_I2C_Driver.h"
 #include "MLX90640_API.h"
-#include "MLX90640_frame2bmp.h"
 #include <math.h>
-#include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include <stdlib.h>
 #include <Arduino.h>
