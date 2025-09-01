@@ -443,9 +443,9 @@ $('capture-image-btn').onclick = () => {
 }
 
 $('toggle-stream-btn').onclick = () => {
-    const streamEnabled = $('toggle-stream-btn').innerHTML === 'Stop Stream';
+    const streamStarted = $('toggle-stream-btn').innerHTML === 'Stop Stream';
 					
-    if (streamEnabled)
+    if (streamStarted)
         stopStream();
     else
         startStream();

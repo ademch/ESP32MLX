@@ -5,6 +5,7 @@
 #include "MLX90640_API.h"
 #include "MLX90640_I2C_Driver.h"
 #include "SPIFFS.h"
+#include "MLX90640_calibration.h"
 
 const char* strBuildTimestamp = __TIMESTAMP__;
 
@@ -185,6 +186,13 @@ void setup() {
 	// Get total and used bytes
 	Serial.printf("* SPIFFS partition: %u kbytes\n", SPIFFS.totalBytes() >> 10);
 	Serial.printf("* SPIFFS used: %u kbytes\n", SPIFFS.usedBytes() >> 10);
+
+
+	Serial.println("Reading user calibration data from SPIFFS...");
+
+		read_user_calibration_offsets();
+
+	Serial.println("success");
 
   Serial.println("Launching http servers...");
 

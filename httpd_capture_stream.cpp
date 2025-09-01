@@ -10,6 +10,7 @@
 #include "MLX90640_API.h"
 
 bool isStreaming = false;
+uint8_t mlx90640calibration_frame = 0;
 
 #define CONFIG_LED_MAX_INTENSITY 255
 int led_duty = 0;
@@ -205,12 +206,12 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
-		res = httpd_resp_send(req, (const char *)fb.buf, fb.len);
+		res = httpd_resp_send(req, (const char *)fb.values, fb.nBytes);
 
 	MLX90640_fb_return(fb);
 
 	int64_t fr_end = esp_timer_get_time();
-	log_i("RAW: %ubytes %ums", (uint32_t)(fb.len), (uint32_t)((fr_end - fr_start) >> 10));
+	log_i("RAW: %ubytes %ums", (uint32_t)(fb.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
 }
@@ -346,13 +347,31 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 				char bufferHeader[236];
 				size_t hlen = snprintf(bufferHeader, 256,
 									   "Content-Type: application/octet-stream\r\nContent-Length: %u\r\nX-Timestamp: %lld.%06ld\r\n\r\n",
-									   fb.len, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
+									   fb.nBytes, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 
 				res = httpd_resp_send_chunk(req, bufferHeader, hlen);
 			}
 
+			// if calibration is in progress
+			if (mlx90640calibration_frame > 0) {
+				mlx90640calibration_frame++;
+
+				for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
+					fb.offsets[i] += fb.values[i]/100.0f - fb.TambientReflected/100.0f;
+				}
+
+				if (mlx90640calibration_frame > 100)
+					// disable calibration after 100 frames
+					mlx90640calibration_frame = 0;
+			}
+
+			// apply user calibration offsets
+			for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
+				fb.values[i] -= fb.offsets[i];
+			}
+
 			if (res == ESP_OK)
-				res = httpd_resp_send_chunk(req, (const char *)fb.buf, fb.len);
+				res = httpd_resp_send_chunk(req, (const char *)fb.values, fb.nBytes);
 
 		MLX90640_fb_return(fb);
 
@@ -365,7 +384,7 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 		int64_t frame_time = (fr_end - last_frame) / 1000;
 		last_frame = fr_end;
 
-		log_i("RAW: %ubytes %ums (%.1ffps)", (uint32_t)(fb.len),
+		log_i("RAW: %ubytes %ums (%.1ffps)", (uint32_t)(fb.nBytes),
 										     (uint32_t)frame_time,
 										     1000.0 / (uint32_t)frame_time );
 	}

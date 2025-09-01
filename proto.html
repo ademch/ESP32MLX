@@ -49,6 +49,8 @@
                                 </div>
                                 <button class="inline-button" id="emissivityBtn">Set</button>
                             </div>
+                            <progress id="calibration-progress" value="0" max="100" style="display: inline-block; width: 150px; height: 12px; margin-right: 90px; border-radius: 0;">void</progress>
+                            <button class="inline-button" id="toggle-calibrate-btn" style="display: inline-block; font-size: 14px; background: #00AA00;">Calibrate</button>
                         </section>
 
                         <hr style="width:100%">
@@ -457,6 +459,7 @@
         <script src="script.js"></script>
         <script src="scriptCaptureAndStream.js"></script>
         <script src="save.js"></script>
+        <script src="calibrate.js"></script>
 
     </body>
 </html>

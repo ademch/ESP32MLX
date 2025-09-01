@@ -17,7 +17,7 @@
 #include "board_config.h"
 #include "httpd_firmware.h"
 #include "httpd_capture_stream.h"
-#include "MLX90640_API.h"
+#include "httpd_mlx.h"
 #include "Arduino.h"
 
 
@@ -38,7 +38,7 @@ httpd_handle_t mlxthc_httpd  = NULL;
 
 
 // GET can have query string comming after ?, eg GET /search?query=esp32&lang=en
-static esp_err_t parse_get(httpd_req_t *req, char **obuf)
+esp_err_t parse_get(httpd_req_t *req, char **obuf)
 {
   char *buf = NULL;
 
@@ -277,53 +277,6 @@ static esp_err_t xclk_handler(httpd_req_t *req)
     return httpd_resp_send(req, NULL, 0);
 }
 
-
-// GET /mlx
-static esp_err_t mlx_handler(httpd_req_t *req)
-{
-	char variable[32];
-	char value[32];
-
-	char *buf = NULL;
-	if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
-
-		// httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-		// of the format param1=val1&param2=val2
-		//
-		// `${baseHost}/mlx?var=${el.id}&val=${value}`;
-		if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
-			httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
-		{
-			free(buf);
-			httpd_resp_send_404(req);
-
-			return ESP_FAIL;
-		}
-
-	free(buf);
-
-	if (!strcmp(variable, "ambReflected"))
-	{
-		float ambReflected = atof(value);
-		log_i("ambReflected: %f C", ambReflected);
-
-		MLX90640_SetAmbientReflected(ambReflected);
-	}
-	else if (!strcmp(variable, "emissivity"))
-	{
-		float fEmissivity = atof(value);
-		log_i("emissivity: %f", fEmissivity);
-
-		MLX90640_SetEmissivity(fEmissivity);
-	}
-	else {
-		log_i("Unknown command: %s", variable);
-		return httpd_resp_send_500(req);
-	}
-
-	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-	return httpd_resp_send(req, NULL, 0);
-}
 
 // GET /reg
 static esp_err_t reg_handler(httpd_req_t *req)

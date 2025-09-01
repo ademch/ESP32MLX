@@ -31,7 +31,10 @@ paramsMLX90640 mlx90640 = {};
 uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
 
 // frame processed by MLX90640_CalculateTo
-static float mlx90640_float_frame[MLX90640_pixelCOUNT];		// 32 coloumns x 24 rows
+float mlx90640_float_frame[MLX90640_pixelCOUNT];	// 32 columns x 24 rows
+
+// user calibration offsets
+float mlx90640_float_offsets[MLX90640_pixelCOUNT];	// 32 columns x 24 rows
 
 // 80% of delta between samples
 int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
@@ -156,10 +159,12 @@ mlx_fb_t MLX90640_fb_get()
 	fb.timestamp.tv_sec  = us / 1000000UL;
 	fb.timestamp.tv_usec = us % 1000000UL;
 
-	fb.width  = 32;
-	fb.height = 24;
-	fb.buf    = mlx90640_float_frame;
-	fb.len    = fb.width * fb.height * sizeof(float);
+	fb.width    = 32;
+	fb.height   = 24;
+	fb.values   = mlx90640_float_frame;
+	fb.offsets  = mlx90640_float_offsets;
+	fb.nBytes   = fb.width * fb.height * sizeof(float);
+	fb.TambientReflected = TambientReflected;
 
 	return fb;
 }
@@ -167,7 +172,8 @@ mlx_fb_t MLX90640_fb_get()
 void MLX90640_fb_return(mlx_fb_t& fb)
 {
 	//free(fb.buf);
-	fb.buf = NULL;
+	fb.values  = NULL;
+	fb.offsets = NULL;
 }
 
 

@@ -79,11 +79,13 @@
     } paramsMLX90640;
 
 	typedef struct {
-		void* buf;                  /*!< Pointer to the pixel data */
-		uint16_t len;               /*!< Length of the buffer in bytes */
-		uint16_t width;             /*!< Width of the buffer in pixels */
-		uint16_t height;            /*!< Height of the buffer in pixels */
-		struct timeval timestamp;   /*!< Timestamp since boot of the first DMA buffer of the frame */
+		float* values;              // Pointer to the pixel data
+		float* offsets;             // Pointer to the offsets array
+		uint16_t nBytes;            // Length of the buffer in bytes
+		uint16_t width;             // Width of the buffer in pixels
+		uint16_t height;            // Height of the buffer in pixels
+		struct timeval timestamp;   // Timestamp since boot of the first DMA buffer of the frame
+		float TambientReflected;
 	} mlx_fb_t;
 
   
