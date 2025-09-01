@@ -129,6 +129,14 @@ section#CaptureButtons {
         min-width: 50%
     }
 
+    .input-group > progress {
+        display: inline-block;
+        padding-right: 10px;
+        min-width: 50%;
+        height: 12px;
+        border-radius: 0;
+    }
+
     .input-group input, .input-group select {
         flex-grow: 1
     }
