@@ -161,9 +161,9 @@
     <ClInclude Include="__vm\.ESP32MLX.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="!proto.html" />
     <None Include="calibrate.js" />
     <None Include="ESP32MLX.ino" />
-    <None Include="proto.html" />
     <None Include="save.js" />
     <None Include="script.js" />
     <None Include="scriptCaptureAndStream.js" />
