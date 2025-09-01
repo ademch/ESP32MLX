@@ -449,7 +449,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
             Sx = sqrt(sqrt(Sx)) * params->ksTo[1];
             
             float fTo = sqrt(sqrt( irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr )) - 273.15;
-                    
+ 
 			int8_t range;
 			if      (fTo < params->ct[1]) range = 0;
 			else if (fTo < params->ct[2]) range = 1;
@@ -546,35 +546,45 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
     }
 }
 
-// Calculats power supply voltage
+// Calculats power supply voltage from its internal ADC readings,
+// compensating for resolution differences and calibration constants
 float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = frameData[MLX90640_RAM_VDD];
     if (vdd > 32767) vdd = vdd - 65536;
 
-    int resolutionRAM = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x0C00) >> 10;
+    int resolutionADC = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x0C00) >> 10;
     
+	// The ADC resolution can vary depending on sensor settings.
+	// Compute a correction factor between the EEPROM default ADC resolution (params->resolutionEE)
+	// and the actual runtime ADC resolution (resolutionADC)
 	float resolutionCor = pow(2, (double)params->resolutionEE) /
-		                  pow(2, (double)resolutionRAM);
+		                  pow(2, (double)resolutionADC);
     
-	// convert from adc counts to voltage
+	// Convert from adc counts to voltage
+	// vdd25 is the sensor’s ADC offset value at 25 °C, stored during calibration.
+	// It acts as the reference point for the supply voltage calculation.
+	// Subtracting it removes the offset so voltage can be computed relative to this baseline
 	vdd = (resolutionCor * vdd - params->vdd25) / params->kVdd + 3.3;
     
     return vdd;
 }
 
 //------------------------------------------------------------------------------
-// Calculate ambient temperature (die temperature)
+// Calculate ambient/device temperature (die temperature)
+// Without correction, the object temperature(To) would be biased by how warm the chip is
 float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = MLX90640_GetVdd(frameData, params);
     
+	// Voltage proportional to ambient temperature constant
 	float Vptat = frameData[MLX90640_RAM_PTAT];
     if (Vptat > 32767) Vptat = Vptat - 65536;
-    
+ 
     float Vbe = frameData[MLX90640_RAM_VBE];
     if (Vbe > 32767) Vbe = Vbe - 65536;
 
+	// The combination of PTAT and Vbe cancels out nonlinear effects and supply voltage dependency
     float VptatArt = (Vptat / (Vptat * params->alphaPTAT + Vbe)) * pow(2, (double)18);
     
     float Ta = (VptatArt / (1 + params->KvPTAT * (vdd - 3.3)) - params->vPTAT25);

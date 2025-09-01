@@ -88,3 +88,54 @@ $('save-still-btn').onclick = () => {
     }
     canvas.parentNode.removeChild(canvas);
 }
+
+function formatFloat32Array(arr, cols = 32, rows = 24)
+{
+    if (arr.length !== cols * rows) {
+        throw new Error(`Array length must be ${cols * rows}, got ${arr.length}`);
+    }
+
+    let result = '';
+    for (let r = 0; r < rows; r++)
+    {
+        let rowStr = '';
+        for (let c = 0; c < cols; c++)
+        {
+            let value = arr[r * cols + c];
+            
+            // Format to 6.2
+            rowStr += value.toFixed(2) + "\t";
+        }
+        result += rowStr + '\n';
+    }
+    return result;
+}
+
+
+
+$('save-data-btn').onclick = () => {
+
+    let emiss   = parseFloat($('emissivity').value);
+    let ambRefl = parseFloat($('ambReflected').value);
+
+    var strArray = "\"Emissivity\": " + emiss.toFixed(2) + "\n" +
+                   "\"AmbientReflection\": " + ambRefl.toFixed(2) + "\n" +
+                   formatFloat32Array(g_floats);
+
+    const blob = new Blob([strArray], { type: 'text/plain' });
+
+    try {
+        var dataURL = URL.createObjectURL(blob);
+        $('save-data-btn').href = dataURL;
+        var d = new Date();
+        $('save-data-btn').download = d.getFullYear() + "-" +
+                                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                        ("0" + d.getDate()).slice(-2) + "_" +
+                                        ("0" + d.getHours()).slice(-2) + "h" +
+                                        ("0" + d.getMinutes()).slice(-2) + "m" +
+                                        ("0" + d.getSeconds()).slice(-2) + "s.txt";
+    }
+    catch (e) {
+        console.error(e);
+    }
+}

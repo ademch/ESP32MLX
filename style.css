@@ -152,12 +152,23 @@ button, .button {
     outline: 0
 }
 
-.save {
+.saveImage {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    height: 18px;
+    line-height: 18px;
+    padding: 0 4px;
+    text-decoration: none;
+    cursor: pointer
+}
+
+.saveData {
     position: absolute;
     right: 5px;
     top: 5px;
-    height: 16px;
-    line-height: 16px;
+    height: 18px;
+    line-height: 18px;
     padding: 0 4px;
     text-decoration: none;
     cursor: pointer

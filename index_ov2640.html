@@ -158,12 +158,23 @@ button, .button {
     outline: 0
 }
 
-.save {
+.saveImage {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    height: 18px;
+    line-height: 18px;
+    padding: 0 4px;
+    text-decoration: none;
+    cursor: pointer
+}
+
+.saveData {
     position: absolute;
     right: 5px;
     top: 5px;
-    height: 16px;
-    line-height: 16px;
+    height: 18px;
+    line-height: 18px;
     padding: 0 4px;
     text-decoration: none;
     cursor: pointer
@@ -863,7 +874,8 @@ input.toggle-section-button {
                                    border-radius: 4px;
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
-                        <a id="save-still-btn" href="#" class="button save" download="capture.jpg">Save</a>
+                        <a id="save-still-btn" href="#" class="button saveImage" download="capture.png">Save image</a>
+                        <a id="save-data-btn" href="#" class="button saveData" download="capture.txt">Save data</a>
                     </div>
                 </figure>
 
@@ -1822,6 +1834,57 @@ $('save-still-btn').onclick = () => {
         console.error(e);
     }
     canvas.parentNode.removeChild(canvas);
+}
+
+function formatFloat32Array(arr, cols = 32, rows = 24)
+{
+    if (arr.length !== cols * rows) {
+        throw new Error(`Array length must be ${cols * rows}, got ${arr.length}`);
+    }
+
+    let result = '';
+    for (let r = 0; r < rows; r++)
+    {
+        let rowStr = '';
+        for (let c = 0; c < cols; c++)
+        {
+            let value = arr[r * cols + c];
+            
+            // Format to 6.2
+            rowStr += value.toFixed(2) + "\t";
+        }
+        result += rowStr + '\n';
+    }
+    return result;
+}
+
+
+
+$('save-data-btn').onclick = () => {
+
+    let emiss   = parseFloat($('emissivity').value);
+    let ambRefl = parseFloat($('ambReflected').value);
+
+    var strArray = "\"Emissivity\": " + emiss.toFixed(2) + "\n" +
+                   "\"AmbientReflection\": " + ambRefl.toFixed(2) + "\n" +
+                   formatFloat32Array(g_floats);
+
+    const blob = new Blob([strArray], { type: 'text/plain' });
+
+    try {
+        var dataURL = URL.createObjectURL(blob);
+        $('save-data-btn').href = dataURL;
+        var d = new Date();
+        $('save-data-btn').download = d.getFullYear() + "-" +
+                                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                        ("0" + d.getDate()).slice(-2) + "_" +
+                                        ("0" + d.getHours()).slice(-2) + "h" +
+                                        ("0" + d.getMinutes()).slice(-2) + "m" +
+                                        ("0" + d.getSeconds()).slice(-2) + "s.txt";
+    }
+    catch (e) {
+        console.error(e);
+    }
 }</script>
 
     </body>
