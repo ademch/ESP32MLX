@@ -74,14 +74,21 @@ $('save-still-btn').onclick = () => {
 
     try {
         var dataURL = canvas.toDataURL('image/png');
-        $('save-still-btn').href = dataURL;
+
+        const link = document.createElement('a');
+        link.href = dataURL;
+
         var d = new Date();
-        $('save-still-btn').download = d.getFullYear() + "-" +
+        link.download = d.getFullYear() + "-" +
                                       ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
                                       ("0" + d.getDate()).slice(-2) + "_" +
                                       ("0" + d.getHours()).slice(-2) + "h" +
                                       ("0" + d.getMinutes()).slice(-2) + "m" +
                                       ("0" + d.getSeconds()).slice(-2) + "s.png";
+
+        document.body.appendChild(link);
+            link.click();
+        document.body.removeChild(link);
     }
     catch (e) {
         console.error(e);
@@ -125,15 +132,68 @@ $('save-data-btn').onclick = () => {
     const blob = new Blob([strArray], { type: 'text/plain' });
 
     try {
-        var dataURL = URL.createObjectURL(blob);
-        $('save-data-btn').href = dataURL;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+
         var d = new Date();
-        $('save-data-btn').download = d.getFullYear() + "-" +
+        link.download = d.getFullYear() + "-" +
                                         ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
                                         ("0" + d.getDate()).slice(-2) + "_" +
                                         ("0" + d.getHours()).slice(-2) + "h" +
                                         ("0" + d.getMinutes()).slice(-2) + "m" +
-                                        ("0" + d.getSeconds()).slice(-2) + "s.txt";
+                                        ("0" + d.getSeconds()).slice(-2) + "s_values.txt";
+
+        document.body.appendChild(link);
+            link.click();                   // Trigger download
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);     // Clean up memory
+    }
+    catch (e) {
+        console.error(e);
+    }
+}
+
+
+$('save-offsets-btn').onclick = async () => {
+
+    const response = await fetch(`${baseHost}/offsets90640`);
+
+    if (!response.ok) throw new Error("HTTP error " + response.status);
+
+    const bodyBytes = await response.arrayBuffer(); // wait for full body
+
+    if (bodyBytes.byteLength != 32*24*4)
+    {
+        console.log("The number of offsets is different from 768");
+        return;
+    }
+
+    // Reinterpret as Float32Array
+    const floats = new Float32Array(bodyBytes);
+
+    var strArray = formatFloat32Array(floats);
+
+    const blob = new Blob([strArray], { type: 'text/plain' });
+
+    try {
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+
+        var d = new Date();
+        link.download = d.getFullYear() + "-" +
+                                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                        ("0" + d.getDate()).slice(-2) + "_" +
+                                        ("0" + d.getHours()).slice(-2) + "h" +
+                                        ("0" + d.getMinutes()).slice(-2) + "m" +
+                                        ("0" + d.getSeconds()).slice(-2) + "s_offsets.txt";
+
+        document.body.appendChild(link);
+            link.click();                   // Trigger download
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);     // Clean up memory
     }
     catch (e) {
         console.error(e);

@@ -183,7 +183,6 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 }
 
 // GET /capture90640
-// Get image in BMP format
 //
 // Input: req- valid request
 esp_err_t mlx90640_capture_handler(httpd_req_t *req)
@@ -198,15 +197,16 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 
 	fb = MLX90640_fb_get();
 
-		httpd_resp_set_type(req, "image/bmp");
-		httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.bmp");
-		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+		httpd_resp_set_type(req, "application/octet-stream");
+		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.bmp");
+		httpd_resp_set_hdr(req,  "Access-Control-Allow-Origin", "*");
 
 		char ts[32];
 		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
 		// Commented out to have a way to visualize uncompensated data
+		//
 		// apply user calibration offsets
 		//for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
 		//	fb.values[i] -= fb.offsets[i];
@@ -218,6 +218,39 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 
 	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
 	log_d("RAW: %ubytes %ums", (uint32_t)(fb.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
+
+	return res;
+}
+
+// GET /offsets90640
+//
+// Input: req- valid request
+esp_err_t mlx90640_offsets_handler(httpd_req_t *req)
+{
+	esp_err_t res;
+
+	[[maybe_unused]] int64_t fr_start = esp_timer_get_time();
+
+	log_i("GET /offsets90640 received");
+
+	mlx_ob_t ob = {};
+
+	ob = MLX90640_ob_get();
+
+		httpd_resp_set_type(req, "application/octet-stream");
+		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.txt");
+		httpd_resp_set_hdr(req,  "Access-Control-Allow-Origin", "*");
+
+		char ts[32];
+		snprintf(ts, 32, "%lld.%06ld", ob.timestamp.tv_sec, ob.timestamp.tv_usec);
+		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
+
+		res = httpd_resp_send(req, (const char *)ob.offsets, ob.nBytes);
+
+	MLX90640_ob_return(ob);
+
+	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
+	log_d("RAW: %ubytes %ums", (uint32_t)(ob.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
 }
@@ -371,7 +404,7 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 				}
 
 				if (mlx90640calibration_frame > 100)
-					// disable calibration after 100 frames
+					// disable calibration after 100 full frames
 					mlx90640calibration_frame = 0;
 			}
 

@@ -88,6 +88,14 @@
 		float TambientReflected;
 	} mlx_fb_t;
 
+	typedef struct {
+		float* offsets;             // Pointer to the offsets array
+		uint16_t nBytes;            // Length of the buffer in bytes
+		uint16_t width;             // Width of the buffer in pixels
+		uint16_t height;            // Height of the buffer in pixels
+		struct timeval timestamp;   // Timestamp since boot of the first DMA buffer of the frame
+	} mlx_ob_t;
+
   
 	int MLX90640_Init(uint8_t _slaveAddr);
 
@@ -105,11 +113,17 @@
 	mlx_fb_t MLX90640_fb_get();
 	void     MLX90640_fb_return(mlx_fb_t& fb);
 
+	mlx_ob_t MLX90640_ob_get();
+	void     MLX90640_ob_return(mlx_ob_t& ob);
+
 	int MLX90640_GetCurADCresolution();
 	int MLX90640_SetADCresolution(uint8_t resolution);
     
 	int MLX90640_GetRefreshRate();
 	int MLX90640_SetRefreshRate(uint8_t refreshRate);
+	
+	int MLX90640_SetFastRefreshRate(uint8_t fast);
+	int MLX90640_GetFastRefreshRate();
     
 	int MLX90640_GetSubPageNumber(uint16_t *frameData);
     int MLX90640_GetCurMode();

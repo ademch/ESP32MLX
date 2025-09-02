@@ -140,7 +140,7 @@ void setup() {
 		}
 
 		MLX90640_Init(MLX90640_address);
-
+		
 		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
 
 	Serial.println("success");

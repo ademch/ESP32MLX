@@ -88,7 +88,8 @@ esp_err_t mlx_handler(httpd_req_t *req)
 			delay(1000);
 
 			// prevent infinite loop (theoretical code)
-			if (j++ > 500)
+			// 05HZ in the worst case gives ~400 (one full frame consists of two subpages)
+			if (j++ > 800)
 			{
 				mlx90640calibration_frame = 0;
 				// Finalize chunked response

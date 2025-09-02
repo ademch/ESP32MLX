@@ -19,6 +19,7 @@
 #include "httpd_capture_stream.h"
 #include "httpd_mlx.h"
 #include "MLX90640_calibration.h"
+#include "MLX90640_API.h"
 #include "Arduino.h"
 
 
@@ -70,99 +71,103 @@ esp_err_t parse_get(httpd_req_t *req, char **obuf)
 
 static esp_err_t control_handler(httpd_req_t *req)
 {
-  char variable[32];
-  char value[32];
+    char variable[32];
+    char value[32];
 
-  char *buf = NULL;
-  if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
+    char *buf = NULL;
+    if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-	  // httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-	  // of the format param1=val1&param2=val2
-	  // `${baseHost}/control?var=${el.id}&val=${value}`;
-	  if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
-		  httpd_query_key_value(buf, "val", value, sizeof(value)) != ESP_OK)
-	  {
-		  free(buf);
-		  httpd_resp_send_404(req);
+	// httpd_query_key_value is a helper function to obtain a URL query tag from a query string
+	// of the format param1=val1&param2=val2
+	// `${baseHost}/control?var=${el.id}&val=${value}`;
+	if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
+	    httpd_query_key_value(buf, "val", value,    sizeof(value)) != ESP_OK)
+	{
+	    free(buf);
+	    httpd_resp_send_404(req);
   
-		  return ESP_FAIL;
-	  }
+	    return ESP_FAIL;
+	}
   
-  free(buf);
+    free(buf);
+   
+    int val = atoi(value);
+    log_i("%s = %d", variable, val);
+    
+    sensor_t *s = esp_camera_sensor_get();
+    
+    int res = 0;
+    if (!strcmp(variable, "framesize"))
+    {
+        if (s->pixformat == PIXFORMAT_JPEG)
+            res = s->set_framesize(s, (framesize_t)val);	// resolution enum
+    }
+    else if (!strcmp(variable, "quality"))
+        res = s->set_quality(s, val);
+    else if (!strcmp(variable, "contrast"))
+        res = s->set_contrast(s, val);
+    else if (!strcmp(variable, "brightness"))
+        res = s->set_brightness(s, val);
+    else if (!strcmp(variable, "saturation"))
+        res = s->set_saturation(s, val);
+    else if (!strcmp(variable, "gainceiling"))
+        res = s->set_gainceiling(s, (gainceiling_t)val);
+    else if (!strcmp(variable, "colorbar"))
+        res = s->set_colorbar(s, val);
+    else if (!strcmp(variable, "awb"))
+        res = s->set_whitebal(s, val);
+    else if (!strcmp(variable, "agc"))
+        res = s->set_gain_ctrl(s, val);
+    else if (!strcmp(variable, "aec"))
+        res = s->set_exposure_ctrl(s, val);
+    else if (!strcmp(variable, "hmirror"))
+        res = s->set_hmirror(s, val);
+    else if (!strcmp(variable, "vflip"))
+        res = s->set_vflip(s, val);
+    else if (!strcmp(variable, "awb_gain"))
+        res = s->set_awb_gain(s, val);
+    else if (!strcmp(variable, "agc_gain"))
+        res = s->set_agc_gain(s, val);
+    else if (!strcmp(variable, "aec_value"))
+        res = s->set_aec_value(s, val);
+    else if (!strcmp(variable, "aec2"))
+        res = s->set_aec2(s, val);
+    else if (!strcmp(variable, "dcw"))
+        res = s->set_dcw(s, val);
+    else if (!strcmp(variable, "bpc"))
+        res = s->set_bpc(s, val);
+    else if (!strcmp(variable, "wpc"))
+        res = s->set_wpc(s, val);
+    else if (!strcmp(variable, "raw_gma"))
+        res = s->set_raw_gma(s, val);
+    else if (!strcmp(variable, "lenc"))
+        res = s->set_lenc(s, val);
+    else if (!strcmp(variable, "special_effect"))
+        res = s->set_special_effect(s, val);
+    else if (!strcmp(variable, "wb_mode"))
+        res = s->set_wb_mode(s, val);
+    else if (!strcmp(variable, "ae_level"))
+        res = s->set_ae_level(s, val);
+    else if (!strcmp(variable, "mlx_fast"))
+  	    res = MLX90640_SetFastRefreshRate(val);
+    else if (!strcmp(variable, "led_intensity"))
+    {
+        led_duty = val;
+        if (isStreaming) enable_LED(true);
+    }
+    else
+	{
+        log_i("Unknown command: %s", variable);
+        res = -1;
+    }
 
-  int val = atoi(value);
-  log_i("%s = %d", variable, val);
-  
-  sensor_t *s = esp_camera_sensor_get();
-  
-  int res = 0;
-  if (!strcmp(variable, "framesize"))
-  {
-    if (s->pixformat == PIXFORMAT_JPEG)
-      res = s->set_framesize(s, (framesize_t)val);	// resolution enum
-  }
-  else if (!strcmp(variable, "quality"))
-    res = s->set_quality(s, val);
-  else if (!strcmp(variable, "contrast"))
-    res = s->set_contrast(s, val);
-  else if (!strcmp(variable, "brightness"))
-    res = s->set_brightness(s, val);
-  else if (!strcmp(variable, "saturation"))
-    res = s->set_saturation(s, val);
-  else if (!strcmp(variable, "gainceiling"))
-    res = s->set_gainceiling(s, (gainceiling_t)val);
-  else if (!strcmp(variable, "colorbar"))
-    res = s->set_colorbar(s, val);
-  else if (!strcmp(variable, "awb"))
-    res = s->set_whitebal(s, val);
-  else if (!strcmp(variable, "agc"))
-    res = s->set_gain_ctrl(s, val);
-  else if (!strcmp(variable, "aec"))
-    res = s->set_exposure_ctrl(s, val);
-  else if (!strcmp(variable, "hmirror"))
-    res = s->set_hmirror(s, val);
-  else if (!strcmp(variable, "vflip"))
-    res = s->set_vflip(s, val);
-  else if (!strcmp(variable, "awb_gain"))
-    res = s->set_awb_gain(s, val);
-  else if (!strcmp(variable, "agc_gain"))
-    res = s->set_agc_gain(s, val);
-  else if (!strcmp(variable, "aec_value"))
-    res = s->set_aec_value(s, val);
-  else if (!strcmp(variable, "aec2"))
-    res = s->set_aec2(s, val);
-  else if (!strcmp(variable, "dcw"))
-    res = s->set_dcw(s, val);
-  else if (!strcmp(variable, "bpc"))
-    res = s->set_bpc(s, val);
-  else if (!strcmp(variable, "wpc"))
-    res = s->set_wpc(s, val);
-  else if (!strcmp(variable, "raw_gma"))
-    res = s->set_raw_gma(s, val);
-  else if (!strcmp(variable, "lenc"))
-    res = s->set_lenc(s, val);
-  else if (!strcmp(variable, "special_effect"))
-    res = s->set_special_effect(s, val);
-  else if (!strcmp(variable, "wb_mode"))
-    res = s->set_wb_mode(s, val);
-  else if (!strcmp(variable, "ae_level"))
-    res = s->set_ae_level(s, val);
-  else if (!strcmp(variable, "led_intensity"))
-  {
-      led_duty = val;
-      if (isStreaming) enable_LED(true);
-  }
-  else {
-      log_i("Unknown command: %s", variable);
-      res = -1;
-  }
+	if (res < 0) {
+		return httpd_resp_send_500(req);
+	}
 
-  if (res < 0)
-	  return httpd_resp_send_500(req);
+    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-
-  return httpd_resp_send(req, NULL, 0);
+    return httpd_resp_send(req, NULL, 0);
 }
 
 
@@ -210,8 +215,8 @@ static esp_err_t status_handler(httpd_req_t *req)
 		p += print_reg(p, s, 0x132, 0xFF);
     }
 
-	char strCalDate[32];
-	read_user_mlx_calibration_date(strCalDate);
+	char strMLXcalibDate[32];
+	read_user_mlx_calibration_date(strMLXcalibDate);
 	
 	p += sprintf(p, "\"xclk\":%u,", s->xclk_freq_hz / 1000000);
     p += sprintf(p, "\"pixformat\":%u,", s->pixformat);
@@ -241,7 +246,8 @@ static esp_err_t status_handler(httpd_req_t *req)
     p += sprintf(p, "\"dcw\":%u,", s->status.dcw);
     p += sprintf(p, "\"colorbar\":%u,", s->status.colorbar);
     p += sprintf(p, "\"led_intensity\":%u,", led_duty);
-	p += sprintf(p, "\"calibration_date\":\"%s\"", strCalDate);
+	p += sprintf(p, "\"calibration_date\":\"%s\",", strMLXcalibDate);
+	p += sprintf(p, "\"mlx_fast\":%u", MLX90640_GetFastRefreshRate());
     
     *p++ = '}';
     *p++ = 0;		// end of the string
@@ -519,6 +525,19 @@ void startControlAndStreamServers()
 		#endif
 	};
 
+	httpd_uri_t offsets90640_uri = {
+		.uri = "/offsets90640",
+		.method = HTTP_GET,
+		.handler = mlx90640_offsets_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+	#endif
+	};
+
 	httpd_uri_t ctrl_bmp_uri = {
 		.uri = "/bmp",
 		.method = HTTP_GET,
@@ -683,6 +702,7 @@ void startControlAndStreamServers()
 		httpd_register_uri_handler(control_httpd, &ctrl_reboot_uri);
 
 		httpd_register_uri_handler(control_httpd, &capture90640_uri);
+		httpd_register_uri_handler(control_httpd, &offsets90640_uri);
     }
     
     config.server_port += 1;

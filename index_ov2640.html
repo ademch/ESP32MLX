@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>ThermaVision v1.0</title>
+        <title>ThermaVision v1.0 (KPI 2025)</title>
         <style>
 
 
@@ -166,28 +166,16 @@ button, .button {
     outline: 0
 }
 
-.saveImage {
+.saveButton {
     position: absolute;
     right: 5px;
     top: 5px;
     height: 18px;
     line-height: 18px;
     padding: 0 4px;
-    text-decoration: none;
     cursor: pointer;
-    min-width: 80px;
-}
-
-.saveData {
-    position: absolute;
-    right: 5px;
-    top: 35px;
-    height: 18px;
-    line-height: 18px;
-    padding: 0 4px;
-    text-decoration: none;
-    cursor: pointer;
-    min-width: 80px;
+    min-width: 140px;
+    text-align: left;
 }
 
 button:hover {
@@ -496,8 +484,18 @@ input.toggle-section-button {
                             </div>
 
                             <div class="group-grey-box">
+                                <div class="input-group" id="mlx-rr-group">
+                                    <label for="mlx_fast">Fast Refresh (.25/2 FPS)</label>
+                                    <div class="switch">
+                                        <input id="mlx_fast" type="checkbox" class="default-action">
+                                        <label class="slider" for="mlx_fast"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="group-grey-box">
                                 <div class="input-group" id="calibration-date-group" style="align-items: center;">
-                                    <label for="calibration_date">Last calibration:</label>
+                                    <label for="calibration_date">Last calibration</label>
                                     <input type="text" id="calibration_date" value="query device" size="10" readonly class="default-action" style="background-color: #202020; border: 0px; color: #1FEFEF; font-size: 12px;">
                                 </div>
                                 <div class="input-group" id="calibration-group" style="align-items: center;">
@@ -897,8 +895,9 @@ input.toggle-section-button {
                                    border-radius: 4px;
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
-                        <a id="save-still-btn" href="#" class="button saveImage" download="capture.png">Save image</a>
-                        <a id="save-data-btn" href="#" class="button saveData" download="capture.txt">Save data</a>
+                        <button id="save-still-btn" type="button" class="button saveButton">Save image</button>
+                        <button id="save-data-btn" type="button" class="button saveButton" style="top: 35px;">Save thermal field</button>
+                        <button id="save-offsets-btn" type="button" class="button saveButton" style="top: 65px;">Save offsets</button>
                     </div>
                 </figure>
 
@@ -1844,14 +1843,21 @@ $('save-still-btn').onclick = () => {
 
     try {
         var dataURL = canvas.toDataURL('image/png');
-        $('save-still-btn').href = dataURL;
+
+        const link = document.createElement('a');
+        link.href = dataURL;
+
         var d = new Date();
-        $('save-still-btn').download = d.getFullYear() + "-" +
+        link.download = d.getFullYear() + "-" +
                                       ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
                                       ("0" + d.getDate()).slice(-2) + "_" +
                                       ("0" + d.getHours()).slice(-2) + "h" +
                                       ("0" + d.getMinutes()).slice(-2) + "m" +
                                       ("0" + d.getSeconds()).slice(-2) + "s.png";
+
+        document.body.appendChild(link);
+            link.click();
+        document.body.removeChild(link);
     }
     catch (e) {
         console.error(e);
@@ -1895,15 +1901,68 @@ $('save-data-btn').onclick = () => {
     const blob = new Blob([strArray], { type: 'text/plain' });
 
     try {
-        var dataURL = URL.createObjectURL(blob);
-        $('save-data-btn').href = dataURL;
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+
         var d = new Date();
-        $('save-data-btn').download = d.getFullYear() + "-" +
+        link.download = d.getFullYear() + "-" +
                                         ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
                                         ("0" + d.getDate()).slice(-2) + "_" +
                                         ("0" + d.getHours()).slice(-2) + "h" +
                                         ("0" + d.getMinutes()).slice(-2) + "m" +
-                                        ("0" + d.getSeconds()).slice(-2) + "s.txt";
+                                        ("0" + d.getSeconds()).slice(-2) + "s_values.txt";
+
+        document.body.appendChild(link);
+            link.click();                   // Trigger download
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);     // Clean up memory
+    }
+    catch (e) {
+        console.error(e);
+    }
+}
+
+
+$('save-offsets-btn').onclick = async () => {
+
+    const response = await fetch(`${baseHost}/offsets90640`);
+
+    if (!response.ok) throw new Error("HTTP error " + response.status);
+
+    const bodyBytes = await response.arrayBuffer(); // wait for full body
+
+    if (bodyBytes.byteLength != 32*24*4)
+    {
+        console.log("The number of offsets is different from 768");
+        return;
+    }
+
+    // Reinterpret as Float32Array
+    const floats = new Float32Array(bodyBytes);
+
+    var strArray = formatFloat32Array(floats);
+
+    const blob = new Blob([strArray], { type: 'text/plain' });
+
+    try {
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+
+        var d = new Date();
+        link.download = d.getFullYear() + "-" +
+                                        ("0" + (d.getMonth() + 1)).slice(-2) + "-" +
+                                        ("0" + d.getDate()).slice(-2) + "_" +
+                                        ("0" + d.getHours()).slice(-2) + "h" +
+                                        ("0" + d.getMinutes()).slice(-2) + "m" +
+                                        ("0" + d.getSeconds()).slice(-2) + "s_offsets.txt";
+
+        document.body.appendChild(link);
+            link.click();                   // Trigger download
+        document.body.removeChild(link);
+
+        URL.revokeObjectURL(link.href);     // Clean up memory
     }
     catch (e) {
         console.error(e);

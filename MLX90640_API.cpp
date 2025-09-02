@@ -42,6 +42,8 @@ int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
 float TambientReflected = 20.0f;
 float fEmissivity = 0.95f;
 
+uint8_t bMLXfastRefreshRate = 1;
+
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractGainParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -175,6 +177,26 @@ void MLX90640_fb_return(mlx_fb_t& fb)
 	fb.offsets = NULL;
 }
 
+mlx_ob_t MLX90640_ob_get()
+{
+	mlx_ob_t ob = {};
+
+	uint64_t us = (uint64_t)esp_timer_get_time();
+	ob.timestamp.tv_sec  = us / 1000000UL;
+	ob.timestamp.tv_usec = us % 1000000UL;
+
+	ob.width   = 32;
+	ob.height  = 24;
+	ob.offsets = mlx90640_float_offsets;
+	ob.nBytes  = ob.width * ob.height * sizeof(float);
+
+	return ob;
+}
+
+void MLX90640_ob_return(mlx_ob_t& ob)
+{
+	ob.offsets = NULL;
+}
 
 int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
@@ -278,6 +300,23 @@ int MLX90640_SetRefreshRate(uint8_t refreshRate)
 	}
     
     return error;
+}
+
+// fast/slow 4HZ vs 05HZ
+int MLX90640_SetFastRefreshRate(uint8_t fast)
+{
+	bMLXfastRefreshRate = fast;
+
+	if (bMLXfastRefreshRate)
+		return MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
+	else
+		return MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_05HZ);
+}
+
+// fast/slow 4HZ vs 05HZ
+int MLX90640_GetFastRefreshRate()
+{
+	return bMLXfastRefreshRate;
 }
 
 //------------------------------------------------------------------------------
@@ -567,7 +606,7 @@ float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 		                  pow(2, (double)resolutionADC);
     
 	// Convert from adc counts to voltage
-	// vdd25 is the sensor’s ADC offset value at 25 °C, stored during calibration.
+	// vdd25 is the sensor's ADC offset value at 25 C, stored during calibration.
 	// It acts as the reference point for the supply voltage calculation.
 	// Subtracting it removes the offset so voltage can be computed relative to this baseline
 	vdd = (resolutionCor * vdd - params->vdd25) / params->kVdd + 3.3;

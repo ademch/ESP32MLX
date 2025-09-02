@@ -53,8 +53,18 @@
                             </div>
 
                             <div class="group-grey-box">
+                                <div class="input-group" id="mlx-rr-group">
+                                    <label for="mlx_fast">Fast Refresh (.25/2 FPS)</label>
+                                    <div class="switch">
+                                        <input id="mlx_fast" type="checkbox" class="default-action">
+                                        <label class="slider" for="mlx_fast"></label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="group-grey-box">
                                 <div class="input-group" id="calibration-date-group" style="align-items: center;">
-                                    <label for="calibration_date">Last calibration:</label>
+                                    <label for="calibration_date">Last calibration</label>
                                     <input type="text" id="calibration_date" value="query device" size="10" readonly class="default-action" style="background-color: #202020; border: 0px; color: #1FEFEF; font-size: 12px;">
                                 </div>
                                 <div class="input-group" id="calibration-group" style="align-items: center;">
@@ -454,8 +464,9 @@
                                    border-radius: 4px;
                                    opacity: 0.5;
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
-                        <a id="save-still-btn" href="#" class="button saveImage" download="capture.png">Save image</a>
-                        <a id="save-data-btn" href="#" class="button saveData" download="capture.txt">Save data</a>
+                        <button id="save-still-btn" type="button" class="button saveButton">Save image</button>
+                        <button id="save-data-btn" type="button" class="button saveButton" style="top: 35px;">Save thermal field</button>
+                        <button id="save-offsets-btn" type="button" class="button saveButton" style="top: 65px;">Save offsets</button>
                     </div>
                 </figure>
 
