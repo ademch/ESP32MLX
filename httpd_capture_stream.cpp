@@ -46,7 +46,7 @@ void enable_LED(bool en)
 // Input: req- valid request
 esp_err_t bmp_handler(httpd_req_t *req)
 {
-	uint64_t fr_start = esp_timer_get_time();
+	[[maybe_unused]] uint64_t fr_start = esp_timer_get_time();
 
 	// lock spi memory dma buffer to read from
 	camera_fb_t *fb = esp_camera_fb_get();
@@ -87,9 +87,9 @@ esp_err_t bmp_handler(httpd_req_t *req)
 
 	free(buf);
 
-	uint64_t fr_end = esp_timer_get_time();
+	[[maybe_unused]] uint64_t fr_end = esp_timer_get_time();
 
-	log_i("BMP: %llu ms, %ubytes", (uint64_t)((fr_end - fr_start) >> 10), buf_len);
+	log_d("BMP: %llu ms, %ubytes", (uint64_t)((fr_end - fr_start) >> 10), buf_len);
 
 	return res;
 }
@@ -122,7 +122,7 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 	camera_fb_t *fb = NULL;
 	esp_err_t res = ESP_OK;
 
-	int64_t fr_start = esp_timer_get_time();
+	[[maybe_unused]] int64_t fr_start = esp_timer_get_time();
 
 	log_i("/capture received");
 
@@ -149,11 +149,11 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 		snprintf(ts, 32, "%lld.%06ld", fb->timestamp.tv_sec, fb->timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
-		size_t fb_len = 0;
+		[[maybe_unused]] size_t fb_len;
 
 		if (fb->format == PIXFORMAT_JPEG)
 		{
-			log_i("PIXFORMAT == JPEG");
+			log_d("PIXFORMAT == JPEG");
 
 			fb_len = fb->len;
 
@@ -161,7 +161,7 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 		}
 		else
 		{
-			log_i("PIXFORMAT != JPEG");
+			log_d("PIXFORMAT != JPEG");
 
 			jpg_chunking_t jchunk = { req, 0 };
 			res = frame2jpg_cb(fb, 80, jpg_encode_stream, &jchunk) ? ESP_OK : ESP_FAIL;
@@ -175,9 +175,9 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 	// unlock dma memory buffer
 	esp_camera_fb_return(fb);
 
-	int64_t fr_end = esp_timer_get_time();
+	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
 
-	log_i("JPG: %ubytes %ums", (uint32_t)(fb_len), (uint32_t)((fr_end - fr_start) >> 10));
+	log_d("JPG: %ubytes %ums", (uint32_t)(fb_len), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
 }
@@ -190,7 +190,7 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 {
 	esp_err_t res;
 
-	int64_t fr_start = esp_timer_get_time();
+	[[maybe_unused]] int64_t fr_start = esp_timer_get_time();
 
 	log_i("/capture90640 received");
 
@@ -206,7 +206,7 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
-		// Commented out to have a wat to visualize uncompensated data
+		// Commented out to have a way to visualize uncompensated data
 		// apply user calibration offsets
 		//for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
 		//	fb.values[i] -= fb.offsets[i];
@@ -216,8 +216,8 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 
 	MLX90640_fb_return(fb);
 
-	int64_t fr_end = esp_timer_get_time();
-	log_i("RAW: %ubytes %ums", (uint32_t)(fb.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
+	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
+	log_d("RAW: %ubytes %ums", (uint32_t)(fb.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
 }
@@ -314,10 +314,10 @@ esp_err_t stream2640_handler(httpd_req_t *req)
 		}
 
 		int64_t fr_end = esp_timer_get_time();
-		int64_t frame_time = (fr_end - last_frame) / 1000;
+		[[maybe_unused]] int64_t frame_time = (fr_end - last_frame) / 1000;
 		last_frame = fr_end;
 
-		log_i("MJPG: %ubytes %ums (%.1ffps)", (uint32_t)(buffer_jpg_len),
+		log_d("MJPG: %ubytes %ums (%.1ffps)", (uint32_t)(buffer_jpg_len),
 			                                  (uint32_t)frame_time,
 			                                  1000.0 / (uint32_t)frame_time );
 	}
@@ -387,10 +387,10 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 		}
 
 		int64_t fr_end = esp_timer_get_time();
-		int64_t frame_time = (fr_end - last_frame) / 1000;
+		[[maybe_unused]] int64_t frame_time = (fr_end - last_frame) / 1000;
 		last_frame = fr_end;
 
-		log_i("RAW: %ubytes %ums (%.1ffps)", (uint32_t)(fb.nBytes),
+		log_d("RAW: %ubytes %ums (%.1ffps)", (uint32_t)(fb.nBytes),
 										     (uint32_t)frame_time,
 										     1000.0 / (uint32_t)frame_time );
 	}

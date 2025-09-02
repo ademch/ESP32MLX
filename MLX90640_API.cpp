@@ -99,10 +99,10 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 
 	// pause the task for more than 10 ms 
 	if (msToNextFrame > 10) {
-		log_i("Awaiting mlxFrame for %lld ms", msToNextFrame);
+		log_d("Awaiting mlxFrame for %lld ms", msToNextFrame);
 		delay(msToNextFrame);
 	}
-	
+
 	// Busy wait for the frame ("data ready" flag)
 	uint16_t dataReady = 0;
     while (dataReady == 0)
@@ -145,8 +145,7 @@ mlx_fb_t MLX90640_fb_get()
 		int status = MLX90640_GetFrameData(mlx90640_frame);
 		if (status < 0)
 		{
-			Serial.print("GetFrame Error: ");
-			Serial.println(status);
+			log_e("GetFrame Error: %d", status);
 			return fb;	// empty fb
 		}
 
