@@ -23,7 +23,6 @@ esp_err_t index_handler(httpd_req_t *req)
 	// if file does not exist
 	if (!file || !file.available()) {
 		log_e("Failed to open file %s, sending index.html from build", pathTimestampFile);
-		file.close();
 		return httpd_resp_send(req, (const char *)index_ov2640_html_gz, sizeof(index_ov2640_html_gz) - 1);
 	}
 

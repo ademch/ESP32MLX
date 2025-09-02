@@ -18,6 +18,7 @@
 #include "httpd_firmware.h"
 #include "httpd_capture_stream.h"
 #include "httpd_mlx.h"
+#include "MLX90640_calibration.h"
 #include "Arduino.h"
 
 
@@ -173,43 +174,46 @@ static int print_reg(char *p, sensor_t *s, uint16_t reg, uint32_t mask)
 
 static esp_err_t status_handler(httpd_req_t *req)
 {
-  static char json_response[1024];
+    static char json_response[1024];
 
-  sensor_t *s = esp_camera_sensor_get();
-  char *p = json_response;
-  *p++ = '{';
+    sensor_t *s = esp_camera_sensor_get();
+    char *p = json_response;
+    *p++ = '{';
 
-  if (s->id.PID == OV5640_PID || s->id.PID == OV3660_PID)
-  {
-    for (int reg = 0x3400; reg < 0x3406; reg += 2)
-      p += print_reg(p, s, reg, 0xFFF);     //12 bit
+    if (s->id.PID == OV5640_PID || s->id.PID == OV3660_PID)
+    {
+		for (int reg = 0x3400; reg < 0x3406; reg += 2)
+		    p += print_reg(p, s, reg, 0xFFF);		//12 bit
  
-    p += print_reg(p, s, 0x3406, 0xFF);
+		p += print_reg(p, s, 0x3406, 0xFF);
 
-    p += print_reg(p, s, 0x3500, 0xFFFF0);  //16 bit
-    p += print_reg(p, s, 0x3503, 0xFF);
-    p += print_reg(p, s, 0x350a, 0x3FF);    //10 bit
-    p += print_reg(p, s, 0x350c, 0xFFFF);   //16 bit
+		p += print_reg(p, s, 0x3500, 0xFFFF0);		//16 bit
+		p += print_reg(p, s, 0x3503, 0xFF);
+		p += print_reg(p, s, 0x350a, 0x3FF);		//10 bit
+		p += print_reg(p, s, 0x350c, 0xFFFF);		//16 bit
 
-    for (int reg = 0x5480; reg <= 0x5490; reg++)
-      p += print_reg(p, s, reg, 0xFF);
+		for (int reg = 0x5480; reg <= 0x5490; reg++)
+		    p += print_reg(p, s, reg, 0xFF);
 
-    for (int reg = 0x5380; reg <= 0x538b; reg++)
-      p += print_reg(p, s, reg, 0xFF);
+		for (int reg = 0x5380; reg <= 0x538b; reg++)
+		    p += print_reg(p, s, reg, 0xFF);
 
-    for (int reg = 0x5580; reg < 0x558a; reg++)
-      p += print_reg(p, s, reg, 0xFF);
+		for (int reg = 0x5580; reg < 0x558a; reg++)
+		    p += print_reg(p, s, reg, 0xFF);
  
-    p += print_reg(p, s, 0x558a, 0x1FF);    //9 bit
-  }
-  else if (s->id.PID == OV2640_PID)
-  {
-    p += print_reg(p, s, 0xd3, 0xFF);
-    p += print_reg(p, s, 0x111, 0xFF);
-    p += print_reg(p, s, 0x132, 0xFF);
-  }
+			p += print_reg(p, s, 0x558a, 0x1FF);    //9 bit
+    }
+    else if (s->id.PID == OV2640_PID)
+    {
+		p += print_reg(p, s, 0xd3, 0xFF);
+		p += print_reg(p, s, 0x111, 0xFF);
+		p += print_reg(p, s, 0x132, 0xFF);
+    }
 
-    p += sprintf(p, "\"xclk\":%u,", s->xclk_freq_hz / 1000000);
+	char strCalDate[32];
+	read_user_mlx_calibration_date(strCalDate);
+	
+	p += sprintf(p, "\"xclk\":%u,", s->xclk_freq_hz / 1000000);
     p += sprintf(p, "\"pixformat\":%u,", s->pixformat);
     p += sprintf(p, "\"framesize\":%u,", s->status.framesize);
     p += sprintf(p, "\"quality\":%u,", s->status.quality);
@@ -235,8 +239,9 @@ static esp_err_t status_handler(httpd_req_t *req)
     p += sprintf(p, "\"hmirror\":%u,", s->status.hmirror);
     p += sprintf(p, "\"vflip\":%u,", s->status.vflip);
     p += sprintf(p, "\"dcw\":%u,", s->status.dcw);
-    p += sprintf(p, "\"colorbar\":%u", s->status.colorbar);
-    p += sprintf(p, ",\"led_intensity\":%u", led_duty);
+    p += sprintf(p, "\"colorbar\":%u,", s->status.colorbar);
+    p += sprintf(p, "\"led_intensity\":%u,", led_duty);
+	p += sprintf(p, "\"calibration_date\":\"%s\"", strCalDate);
     
     *p++ = '}';
     *p++ = 0;		// end of the string

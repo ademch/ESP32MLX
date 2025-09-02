@@ -206,6 +206,12 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
+		// Commented out to have a wat to visualize uncompensated data
+		// apply user calibration offsets
+		//for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
+		//	fb.values[i] -= fb.offsets[i];
+		//}
+
 		res = httpd_resp_send(req, (const char *)fb.values, fb.nBytes);
 
 	MLX90640_fb_return(fb);

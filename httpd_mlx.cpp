@@ -50,13 +50,23 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	}
 	else if (!strcmp(variable, "calibrate"))
 	{
+		esp_err_t res;
+
+		char httpDate[128] = {};
+		if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 128) != ESP_OK) {
+			log_e("X-Client-Date is missing in request");
+			httpd_resp_send_500(req);
+			return ESP_FAIL;
+		}
+		log_i("Received X-Client-Date: %s", httpDate);
+		
 		float fMeanTemp = atof(value);
 		log_i("Calibrating to %f mean temperature", fMeanTemp);
 
 		if (!isStreaming)
 			return httpd_resp_send_500(req);
 
-		clear_user_calibration_offsets();
+		clear_user_mlx_calibration_offsets();
 		mlx90640calibration_frame = 1;
 
 		httpd_resp_set_type(req, "application/octet-stream");
@@ -66,7 +76,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		int j = 0;
 		while (true)
 		{
-			esp_err_t res = httpd_resp_send_chunk(req, (const char*)&mlx90640calibration_frame, 1);
+			res = httpd_resp_send_chunk(req, (const char*)&mlx90640calibration_frame, 1);
 
 			if (res != ESP_OK) {
 				log_e("Sending status failed");
@@ -91,12 +101,18 @@ esp_err_t mlx_handler(httpd_req_t *req)
 
 		// success
 
-		write_user_calibration_offsets();
+		res = write_user_mlx_calibration_offsets(httpDate);
+		if (res != ESP_OK) {
+			// abort connection
+			int sockfd = httpd_req_to_sockfd(req);
+			close(sockfd);
+		}
 
 		// Finalize chunked response
 		return httpd_resp_send_chunk(req, NULL, 0);
 	}
-	else {
+	else
+	{
 		log_i("Unknown command: %s", variable);
 		return httpd_resp_send_500(req);
 	}

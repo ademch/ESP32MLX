@@ -5,12 +5,12 @@
 
 extern float mlx90640_float_offsets[MLX90640_pixelCOUNT];
 
-void clear_user_calibration_offsets()
+void clear_user_mlx_calibration_offsets()
 {
 	memset(mlx90640_float_offsets, 0, sizeof(mlx90640_float_offsets));
 }
 
-int read_user_calibration_offsets()
+int read_user_mlx_calibration_offsets()
 {
 	memset(mlx90640_float_offsets, 0, sizeof(mlx90640_float_offsets));
 
@@ -22,7 +22,6 @@ int read_user_calibration_offsets()
 
 	if (!file || !file.available()) {
 		log_e("Failed to open file %s, defaulting to zero user offsets", pathFile);
-		file.close();
 		return 1;
 	}
 
@@ -51,7 +50,7 @@ int read_user_calibration_offsets()
 }
 
 
-int write_user_calibration_offsets()
+int write_user_mlx_calibration_offsets(const char* httpDate)
 {
 	File fd;
 
@@ -68,5 +67,43 @@ int write_user_calibration_offsets()
 
 	log_i("File %s saved to SPIFFS taking %ubytes", pathFile, len);
 
+
+	//- WRITE CLIENT DATE TO FILE----------------------------------------------
+
+	const char* pathTimestamp = "/calibrationTS.txt";
+	fd = SPIFFS.open(pathTimestamp, "w");
+	if (!fd) {
+		log_e("Failed to open %s file for writing", pathTimestamp);
+		return ESP_FAIL;
+	}
+
+	fd.print(httpDate);	// long
+
+	fd.close();
+
+	log_i("Timestamp written to %s", pathTimestamp);
+
 	return ESP_OK;
+}
+
+
+void read_user_mlx_calibration_date(char* strDate)
+{
+	File fd;
+	const char* pathTimestampFile = "/calibrationTS.txt";
+	fd = SPIFFS.open(pathTimestampFile, "r");
+
+	// if file does not exist
+	if (!fd || !fd.available()) {
+		log_e("Failed to open file %s, sending index.html from build", pathTimestampFile);
+		snprintf(strDate, 32, "never");
+		return;
+	}
+
+	String strSPIFFSTimestamp = fd.readString();
+	log_i("File content: %s", strSPIFFSTimestamp.c_str());
+
+	fd.close();
+
+	snprintf(strDate, 32, "%s", strSPIFFSTimestamp.c_str());
 }

@@ -190,7 +190,7 @@ void setup() {
 
 	Serial.println("Reading user calibration data from SPIFFS...");
 
-		read_user_calibration_offsets();
+		read_user_mlx_calibration_offsets();
 
 	Serial.println("success");
 

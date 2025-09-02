@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width,initial-scale=1">
-        <title>ESP32 OV2640</title>
+        <title>ThermaVision v1.0</title>
         <style>
 
 
@@ -460,7 +460,7 @@ input.toggle-section-button {
                     <nav id="menu">
 
                         <section id="CaptureButtons">
-                            <button id="capture-image-btn" style="font-size: 16px; background: #00AA00;">Capture Image</button>
+                            <button id="capture-image-btn" style="font-size: 16px; background: #00AA00;">Capture Raw Image</button>
                             <button id="toggle-stream-btn" style="font-size: 16px; background: #00AA00;">Start Stream</button>
 
                             <div class="group-grey-box">
@@ -478,24 +478,32 @@ input.toggle-section-button {
                         <input type="checkbox" id="nav-toggle-mlx" class="hidden toggle-section-button" checked="checked">
 
                         <section class="toggle-section">
-                            <div class="input-group" id="ambient-reflected-group">
-                                <label for="ambReflected">Ambient Refl. Temp., C</label>
-                                <div class="text">
-                                    <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="20.0" style="width: 55px; margin-right: 10px;">
+                            <div class="group-grey-box">
+                                <div class="input-group" id="ambient-reflected-group">
+                                    <label for="ambReflected">Ambient Refl. Temp., C</label>
+                                    <div class="text">
+                                        <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="20.0" style="width: 55px; margin-right: 10px;">
+                                    </div>
+                                    <button class="inline-button" id="ambReflectedBtn">Set</button>
                                 </div>
-                                <button class="inline-button" id="ambReflectedBtn">Set</button>
-                            </div>
-                            <div class="input-group" id="emissivity-group">
-                                <label for="emissivity">Emissivity</label>
-                                <div class="text">
-                                    <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="0.95" style="width: 55px; margin-right: 10px;">
+                                <div class="input-group" id="emissivity-group">
+                                    <label for="emissivity">Emissivity</label>
+                                    <div class="text">
+                                        <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="0.95" style="width: 55px; margin-right: 10px;">
+                                    </div>
+                                    <button class="inline-button" id="emissivityBtn">Set</button>
                                 </div>
-                                <button class="inline-button" id="emissivityBtn">Set</button>
                             </div>
 
-                            <div class="input-group" id="emissivity-group" style="align-items: center;">
-                                <progress id="calibration-progress" value="0" max="100">void</progress>
-                                <button class="inline-button" id="toggle-calibrate-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 15px;">Calibrate</button>
+                            <div class="group-grey-box">
+                                <div class="input-group" id="calibration-date-group" style="align-items: center;">
+                                    <label for="calibration_date">Last calibration:</label>
+                                    <input type="text" id="calibration_date" value="query device" size="10" readonly class="default-action" style="background-color: #202020; border: 0px; color: #1FEFEF; font-size: 12px;">
+                                </div>
+                                <div class="input-group" id="calibration-group" style="align-items: center;">
+                                    <progress id="calibration-progress" value="0" max="100">void</progress>
+                                    <button class="inline-button" id="toggle-calibrate-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Calibrate</button>
+                                </div>
                             </div>
                         </section>
 
@@ -1237,12 +1245,12 @@ document.addEventListener('DOMContentLoaded', function (event)
         try {
             // send raw binary directly
             const response = await fetch(`${baseHost}/uploadserver`, {
-                method: "POST",
-                headers: {
-                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
-                },
-                body: file
-            });
+                                        method: "POST",
+                                        headers: {
+                                            "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                        },
+                                        body: file
+                                    });
             if (!response.ok) throw new Error("Upload failed");
 
             const text = await response.text();
@@ -1909,7 +1917,11 @@ const startCalibration = async () => {
 
     let ambRefl = parseFloat($('ambReflected').value);
 
-    const response = await fetch(`${baseHost}/mlx?var=calibrate&val=${ambRefl}`);
+    const response = await fetch(`${baseHost}/mlx?var=calibrate&val=${ambRefl}`, {
+                                headers: {
+                                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                }
+                            });
 
     if (!response.ok)   throw new Error("HTTP error " + response.status);
     if (!response.body) throw new Error("ReadableStream not supported");
@@ -1932,7 +1944,9 @@ const startCalibration = async () => {
     $('toggle-calibrate-btn').innerHTML = 'Calibrate';
     $('toggle-calibrate-btn').style.background = '#00AA00';
     $('toggle-calibrate-btn').disabled = true;
+    $('calibration_date').value = "just recently";
 }
+
 
 // Attach actions to buttons
 

@@ -333,12 +333,12 @@ document.addEventListener('DOMContentLoaded', function (event)
         try {
             // send raw binary directly
             const response = await fetch(`${baseHost}/uploadserver`, {
-                method: "POST",
-                headers: {
-                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
-                },
-                body: file
-            });
+                                        method: "POST",
+                                        headers: {
+                                            "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                        },
+                                        body: file
+                                    });
             if (!response.ok) throw new Error("Upload failed");
 
             const text = await response.text();

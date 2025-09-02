@@ -6,7 +6,11 @@ const startCalibration = async () => {
 
     let ambRefl = parseFloat($('ambReflected').value);
 
-    const response = await fetch(`${baseHost}/mlx?var=calibrate&val=${ambRefl}`);
+    const response = await fetch(`${baseHost}/mlx?var=calibrate&val=${ambRefl}`, {
+                                headers: {
+                                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                }
+                            });
 
     if (!response.ok)   throw new Error("HTTP error " + response.status);
     if (!response.body) throw new Error("ReadableStream not supported");
@@ -29,7 +33,9 @@ const startCalibration = async () => {
     $('toggle-calibrate-btn').innerHTML = 'Calibrate';
     $('toggle-calibrate-btn').style.background = '#00AA00';
     $('toggle-calibrate-btn').disabled = true;
+    $('calibration_date').value = "just recently";
 }
+
 
 // Attach actions to buttons
 
