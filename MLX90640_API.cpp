@@ -666,16 +666,20 @@ void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
+	// Voltage proportional to ambient temperature constant
 	float KvPTAT = (eeData[50] & 0xFC00) >> 10;
     if (KvPTAT > 31) KvPTAT = KvPTAT - 64;
     KvPTAT = KvPTAT/4096;						// /2^10
     
+	// Temperature proportional to ambient temperature constant
     float KtPTAT = eeData[50] & 0x03FF;
     if (KtPTAT > 511) KtPTAT = KtPTAT - 1024;
     KtPTAT = KtPTAT/8;
     
+	// Voltage proportional to ambient temperature at 25C
 	int16_t vPTAT25 = eeData[49];
     
+	// Sensitivity proportional to ambient temperature
     float alphaPTAT = (eeData[16] & 0xF000) / pow(2, (double)14) + 8.0f;
     
     mlx90640->KvPTAT = KvPTAT;
@@ -744,6 +748,7 @@ void ExtractKsToParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
     int KsToScale = (eeData[63] & 0x000F) + 8;		// unsigned
     KsToScale = 1 << KsToScale;
     
+	// Constant for the object temperature sensitivity depending on the temperature range
     mlx90640->ksTo[0] =  eeData[61] & 0x00FF;
     mlx90640->ksTo[1] = (eeData[61] & 0xFF00) >> 8;
     mlx90640->ksTo[2] =  eeData[62] & 0x00FF;
@@ -871,6 +876,7 @@ void ExtractOffsetParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 //------------------------------------------------------------------------------
 
+// The per pixel ambient temperature calibration constants
 void ExtractKtaPixelParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
     int8_t KtaRC[4];
@@ -1010,7 +1016,7 @@ void ExtractCPParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
  }
 
 //------------------------------------------------------------------------------
-
+// Chess Interleaved Line Correction
 void ExtractCILCParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
     uint8_t calibrationModeEE;
@@ -1118,9 +1124,9 @@ int ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640)
  {
      int pixPosDif = pix1 - pix2;
 
-     if (pixPosDif > -34 && pixPosDif < -30) return -6;
-     if (pixPosDif > -2 && pixPosDif < 2)    return -6;
-     if (pixPosDif > 30 && pixPosDif < 34)   return -6;
+     if (pixPosDif > -34 && pixPosDif < -30)  return -6;
+     if (pixPosDif >  -2 && pixPosDif <   2)    return -6;
+     if (pixPosDif >  30 && pixPosDif <  34)   return -6;
      
      return 0;    
  }
