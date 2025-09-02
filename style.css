@@ -162,24 +162,26 @@ button, .button {
 
 .saveImage {
     position: absolute;
-    left: 5px;
-    top: 5px;
-    height: 18px;
-    line-height: 18px;
-    padding: 0 4px;
-    text-decoration: none;
-    cursor: pointer
-}
-
-.saveData {
-    position: absolute;
     right: 5px;
     top: 5px;
     height: 18px;
     line-height: 18px;
     padding: 0 4px;
     text-decoration: none;
-    cursor: pointer
+    cursor: pointer;
+    min-width: 80px;
+}
+
+.saveData {
+    position: absolute;
+    right: 5px;
+    top: 35px;
+    height: 18px;
+    line-height: 18px;
+    padding: 0 4px;
+    text-decoration: none;
+    cursor: pointer;
+    min-width: 80px;
 }
 
 button:hover {
