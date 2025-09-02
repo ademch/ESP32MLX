@@ -38,7 +38,7 @@ void enable_LED(bool en)
 	ledcWrite(LED_GPIO_NUM, duty);
 	//ledc_set_duty(CONFIG_LED_LEDC_SPEED_MODE, CONFIG_LED_LEDC_CHANNEL, duty);
 	//ledc_update_duty(CONFIG_LED_LEDC_SPEED_MODE, CONFIG_esp_err_tED_LEDC_CHANNEL);
-	log_i("Set LED intensity to %d", duty);
+	log_d("Set LED intensity to %d", duty);
 }
 
 
@@ -113,7 +113,7 @@ static size_t jpg_encode_stream(void *arg, size_t index, const void *data, size_
 }
 
 
-// GET /capture
+// GET /capture2640
 // Get image in JPEG format
 //
 // Input: req- valid request
@@ -124,7 +124,7 @@ esp_err_t ov2640_capture_handler(httpd_req_t *req)
 
 	[[maybe_unused]] int64_t fr_start = esp_timer_get_time();
 
-	log_i("/capture received");
+	log_i("/capture2640 received");
 
 	enable_LED(true);
 		// The LED needs to be turned on ~150ms before the call to esp_camera_fb_get()
@@ -223,7 +223,7 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 }
 
 
-// GET /stream
+// GET :81/stream
 //
 // Input: req- valid request
 esp_err_t stream2640_handler(httpd_req_t *req)
@@ -234,6 +234,8 @@ esp_err_t stream2640_handler(httpd_req_t *req)
 
 	static int64_t last_frame = 0;
 	if (!last_frame) last_frame = esp_timer_get_time();
+
+	log_i("GET :81/stream received");
 
 	esp_err_t res;
 	res = httpd_resp_set_type(req, _STREAM_MULTIPART_CONTENT_TYPE);
@@ -328,13 +330,15 @@ esp_err_t stream2640_handler(httpd_req_t *req)
 	return res;
 }
 
-// GET /stream:82
+// GET :82/stream
 //
 // Input: req- valid request
 esp_err_t stream90640_handler(httpd_req_t *req)
 {
 	static int64_t last_frame = 0;
 	if (!last_frame) last_frame = esp_timer_get_time();
+
+	log_i("GET :82/stream received");
 
 	esp_err_t res;
 	res = httpd_resp_set_type(req, _STREAM_MULTIPART_CONTENT_TYPE);
