@@ -294,8 +294,9 @@ document.addEventListener('DOMContentLoaded', function (event)
                 return;
         }
 
-        setReg(reg, offset, mask, value, function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }
-        });
+        setReg(reg, offset, mask, value,
+               function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+              );
     }
 
     // Attach on change action for register elements
@@ -303,10 +304,11 @@ document.addEventListener('DOMContentLoaded', function (event)
       .querySelectorAll('.reg-action')
       .forEach(el => {
           if (el.type === 'text') {
-              el.onkeyup = function(e) { if(e.keyCode == 13) { setRegValue(el); }
-                               }
+              el.onkeyup = function(e) { if (e.keyCode == 13) { setRegValue(el); }  }
           }
-          else { el.onchange = () => setRegValue(el); }
+          else {
+              el.onchange = () => setRegValue(el);
+          }
       })
 
 
