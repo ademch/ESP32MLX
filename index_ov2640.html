@@ -108,14 +108,14 @@ section#CaptureButtons {
 /* Menu header*/
 #nav-toggle {
     cursor: pointer;
-    display: block
+    display: block;
 }
 
 #nav-toggle-cb {
     outline: 0;
     opacity: 0;
     width: 0;
-    height: 0
+    height: 0;
 }
 
     #nav-toggle-cb:checked + #menu {
@@ -126,7 +126,8 @@ section#CaptureButtons {
     display: flex;
     flex-wrap: nowrap;
     line-height: 20px;
-    margin: 5px 0
+    margin: 5px 0;
+    align-items: center;
 }
 
     .input-group > label {
@@ -494,7 +495,24 @@ input.toggle-section-button {
                             </div>
 
                             <div class="group-grey-box">
-                                <div class="input-group" id="calibration-date-group" style="align-items: center;">
+                                <div class="input-group" id="mlx-devicet-group">
+                                    <label for="mlxDeviceT">Device Temperature, C</label>
+                                    <div class="text">
+                                        <input id="mlxDeviceT" type="text" readonly value="query" style="background-color: #202020; width: 55px; margin-right: 10px; border: 0px; color: #1FEFEF;">
+                                    </div>
+                                    <button class="inline-button" id="mlxDeviceTBtn" style="background: #00AA00;">Get</button>
+                                </div>
+                                <div class="input-group" id="mlx-devicev-group">
+                                    <label for="mlxDeviceV">Supply Voltage, V</label>
+                                    <div class="text">
+                                        <input id="mlxDeviceV" type="text" readonly value="query" style="background-color: #202020; width: 55px; margin-right: 10px; border: 0px; color: #1FEFEF;">
+                                    </div>
+                                    <button class="inline-button" id="mlxDeviceVBtn" style="background: #00AA00;">Get</button>
+                                </div>
+                            </div>
+
+                            <div class="group-grey-box">
+                                <div class="input-group" id="calibration-date-group">
                                     <label for="calibration_date">Last calibration</label>
                                     <input type="text" id="calibration_date" value="query device" size="10" readonly class="default-action" style="background-color: #202020; border: 0px; color: #1FEFEF; font-size: 12px;">
                                 </div>
@@ -925,8 +943,8 @@ function fetchUrl(url, cb)
             if (response.status !== 200) { cb(response.status, response.statusText); }
             else {
                 response.text()
-                .then(function(data) { cb(200, data); })
-                .catch(function(err) { cb(-1, err); });
+                    .then(function(data) { cb(200, data); })
+                    .catch(function(err) { cb(-1, err); });
             }
         })
         .catch(function(err) { cb(-1, err); });
@@ -1037,7 +1055,7 @@ const updateGUIvalue = (el, value, updateRemote) => {
         if (el.id === "aec") {
             value ? hide(exposure) : show(exposure);
         }
-        else if(el.id === "agc")
+        else if (el.id === "agc")
         {
             if (value) {
                 show(gainCeiling);
@@ -1136,7 +1154,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         let ambRefl = parseFloat($('ambReflected').value);
 
         fetchUrl(`${baseHost}/mlx?var=ambReflected&val=${ambRefl}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
                 );
     }
 
@@ -1144,8 +1162,30 @@ document.addEventListener('DOMContentLoaded', function (event)
         let emiss = parseFloat($('emissivity').value);
 
         fetchUrl(`${baseHost}/mlx?var=emissivity&val=${emiss}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
                 );
+    }
+
+    $('mlxDeviceTBtn').onclick = () => {
+        fetchUrl(`${baseHost}/mlx?var=device_temperature&val=0`,
+                 function(code, txt) {
+                     if (code != 200)
+                         alert('Error[' + code + ']: ' + txt);
+                     else
+                         $('mlxDeviceT').value = txt;
+                 }
+             );
+    }
+
+    $('mlxDeviceVBtn').onclick = () => {
+        fetchUrl(`${baseHost}/mlx?var=device_voltage&val=0`,
+                 function(code, txt) {
+                     if (code != 200)
+                         alert('Error[' + code + ']: ' + txt);
+                     else
+                         $('mlxDeviceV').value = txt;
+                 }
+             );
     }
 
     $('set-resolution').onclick = () => {

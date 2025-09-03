@@ -102,14 +102,14 @@ section#CaptureButtons {
 /* Menu header*/
 #nav-toggle {
     cursor: pointer;
-    display: block
+    display: block;
 }
 
 #nav-toggle-cb {
     outline: 0;
     opacity: 0;
     width: 0;
-    height: 0
+    height: 0;
 }
 
     #nav-toggle-cb:checked + #menu {
@@ -120,7 +120,8 @@ section#CaptureButtons {
     display: flex;
     flex-wrap: nowrap;
     line-height: 20px;
-    margin: 5px 0
+    margin: 5px 0;
+    align-items: center;
 }
 
     .input-group > label {

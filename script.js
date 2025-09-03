@@ -14,8 +14,8 @@ function fetchUrl(url, cb)
             if (response.status !== 200) { cb(response.status, response.statusText); }
             else {
                 response.text()
-                .then(function(data) { cb(200, data); })
-                .catch(function(err) { cb(-1, err); });
+                    .then(function(data) { cb(200, data); })
+                    .catch(function(err) { cb(-1, err); });
             }
         })
         .catch(function(err) { cb(-1, err); });
@@ -126,7 +126,7 @@ const updateGUIvalue = (el, value, updateRemote) => {
         if (el.id === "aec") {
             value ? hide(exposure) : show(exposure);
         }
-        else if(el.id === "agc")
+        else if (el.id === "agc")
         {
             if (value) {
                 show(gainCeiling);
@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', function (event)
         let ambRefl = parseFloat($('ambReflected').value);
 
         fetchUrl(`${baseHost}/mlx?var=ambReflected&val=${ambRefl}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
                 );
     }
 
@@ -233,8 +233,30 @@ document.addEventListener('DOMContentLoaded', function (event)
         let emiss = parseFloat($('emissivity').value);
 
         fetchUrl(`${baseHost}/mlx?var=emissivity&val=${emiss}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
+                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
                 );
+    }
+
+    $('mlxDeviceTBtn').onclick = () => {
+        fetchUrl(`${baseHost}/mlx?var=device_temperature&val=0`,
+                 function(code, txt) {
+                     if (code != 200)
+                         alert('Error[' + code + ']: ' + txt);
+                     else
+                         $('mlxDeviceT').value = txt;
+                 }
+             );
+    }
+
+    $('mlxDeviceVBtn').onclick = () => {
+        fetchUrl(`${baseHost}/mlx?var=device_voltage&val=0`,
+                 function(code, txt) {
+                     if (code != 200)
+                         alert('Error[' + code + ']: ' + txt);
+                     else
+                         $('mlxDeviceV').value = txt;
+                 }
+             );
     }
 
     $('set-resolution').onclick = () => {

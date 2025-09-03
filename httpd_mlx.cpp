@@ -9,7 +9,6 @@ extern esp_err_t parse_get(httpd_req_t *req, char **obuf);
 extern bool isStreaming;
 extern uint8_t mlx90640calibration_frame;
 
-
 // GET /mlx
 esp_err_t mlx_handler(httpd_req_t *req)
 {
@@ -19,18 +18,18 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	char *buf = NULL;
 	if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-	// httpd_query_key_value is a helper function to obtain a URL query tag from a query string
-	// of the format param1=val1&param2=val2
-	//
-	// `${baseHost}/mlx?var=${el.id}&val=${value}`;
-	if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
-		httpd_query_key_value(buf, "val", value,    sizeof(value))    != ESP_OK)
-	{
-		free(buf);
-		httpd_resp_send_404(req);
+		// httpd_query_key_value is a helper function to obtain a URL query tag from a query string
+		// of the format param1=val1&param2=val2
+		//
+		// `${baseHost}/mlx?var=${el.id}&val=${value}`;
+		if (httpd_query_key_value(buf, "var", variable, sizeof(variable)) != ESP_OK ||
+			httpd_query_key_value(buf, "val", value,    sizeof(value))    != ESP_OK)
+		{
+			free(buf);
+			httpd_resp_send_404(req);
 
-		return ESP_FAIL;
-	}
+			return ESP_FAIL;
+		}
 
 	free(buf);
 
@@ -40,6 +39,9 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		log_i("ambReflected: %f C", ambReflected);
 
 		MLX90640_SetAmbientReflected(ambReflected);
+
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+		return httpd_resp_send(req, NULL, 0);
 	}
 	else if (!strcmp(variable, "emissivity"))
 	{
@@ -47,6 +49,33 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		log_i("emissivity: %f", fEmissivity);
 
 		MLX90640_SetEmissivity(fEmissivity);
+
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+		return httpd_resp_send(req, NULL, 0);
+	}
+	else if (!strcmp(variable, "device_voltage"))
+	{
+		log_i("device_voltage");
+
+		float vdd = MLX90640_GetVddRAM();
+
+		char str_vdd[10];
+		snprintf(str_vdd, 10, "%.2f", vdd);
+
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+		return httpd_resp_send(req, (const char*)str_vdd, strlen(str_vdd));
+	}
+	else if (!strcmp(variable, "device_temperature"))
+	{
+		log_i("device_temperature");
+
+		float ta = MLX90640_GetTaRAM();
+
+		char str_ta[10];
+		snprintf(str_ta, 10, "%.2f", ta);
+
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+		return httpd_resp_send(req, (const char*)&str_ta, strlen(str_ta));
 	}
 	else if (!strcmp(variable, "calibrate"))
 	{
@@ -69,7 +98,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		clear_user_mlx_calibration_offsets();
 		mlx90640calibration_frame = 1;
 
-		httpd_resp_set_type(req, "application/octet-stream");
+		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
 		httpd_resp_set_hdr(req,  "Access-Control-Allow-Origin", "*");
 		httpd_resp_set_hdr(req,  "Transfer-Encoding", "chunked");
 
@@ -118,7 +147,5 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		return httpd_resp_send_500(req);
 	}
 
-	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-	return httpd_resp_send(req, NULL, 0);
 }
 

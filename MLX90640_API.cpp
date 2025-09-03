@@ -24,6 +24,9 @@
 // device address
 uint8_t mlx_slaveAddr = 0;
 
+// mutex for exclusive device interaction
+SemaphoreHandle_t mlxMutex;
+
 // params
 paramsMLX90640 mlx90640 = {};
 
@@ -66,6 +69,8 @@ int MLX90640_Init(uint8_t _slaveAddr)
 {
 	mlx_slaveAddr = _slaveAddr;
 
+	mlxMutex = xSemaphoreCreateMutex();
+
 	uint16_t eeMLX90640[MLX90640_eepromSIZE];
 
 	int status = MLX90640_DumpEE(eeMLX90640);
@@ -84,20 +89,20 @@ int MLX90640_DumpEE(uint16_t *eeData)
 
 int MLX90640_GetFrameData(uint16_t *frameData)
 {
-    uint16_t controlRegister1;
-    uint16_t statusRegister;
-    int error;
+	uint16_t controlRegister1;
+	uint16_t statusRegister;
+	int error;
 
-// --------------------------------------------------------------------------
-// Logic for measuring how much time has passed since previous frame
-// to be able to pause the task before the next frame becomes available
+	// --------------------------------------------------------------------------
+	// Logic for measuring how much time has passed since previous frame
+	// to be able to pause the task before the next frame becomes available
 
 	static int64_t mlx_update_t1_usec = 0;
 
-	int64_t mlx_update_t2_usec  = esp_timer_get_time();
+	int64_t mlx_update_t2_usec = esp_timer_get_time();
 
 	int64_t msFromPrevFrame = (mlx_update_t2_usec - mlx_update_t1_usec) >> 10;		// convert to MS dividing by 1024
-	int64_t msToNextFrame   = msFrame_delay - msFromPrevFrame;
+	int64_t msToNextFrame = msFrame_delay - msFromPrevFrame;
 
 	// pause the task for more than 10 ms 
 	if (msToNextFrame > 10) {
@@ -105,36 +110,52 @@ int MLX90640_GetFrameData(uint16_t *frameData)
 		delay(msToNextFrame);
 	}
 
-	// Busy wait for the frame ("data ready" flag)
-	uint16_t dataReady = 0;
-    while (dataReady == 0)
-    {
-        error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
-        if (error != 0) return error;
- 
-        dataReady = statusRegister & 0x0008;	// B3: New data available in ram
-    }
+	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
-	mlx_update_t1_usec = esp_timer_get_time();
-    
-//  ---------------------------------------------------------------------------
-		
-	// Read frame
-	error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
-	if (error != 0) return error;
+		// Busy wait for the frame ("data ready" flag)
+		uint16_t dataReady = 0;
+		while (dataReady == 0)
+		{
+			error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
+			if (error != 0) {
+				xSemaphoreGive(mlxMutex);
+				return error;
+			}
 
-	// Reset "New DATA available in RAM" flag
-    error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
-    if (error == -1) return error;
+			dataReady = statusRegister & 0x0008;	// B3: New data available in ram
+		}
 
-	// Read and store controlRegister1
-    error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    if (error != 0) return error;
+		mlx_update_t1_usec = esp_timer_get_time();
 
-	frameData[MLX90640_RAM_AUX_CTRL_REG1] = controlRegister1;
-	frameData[MLX90640_RAM_AUX_SUBPAGE]   = statusRegister & 0x0001;
+		//  ---------------------------------------------------------------------------
+
+		// Read frame
+		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return error;
+		}
+
+		// Reset "New DATA available in RAM" flag
+		error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
+		if (error == -1) {
+			xSemaphoreGive(mlxMutex);
+			return error;
+		}
+
+		// Read and store controlRegister1
+		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return error;
+		}
+
+	xSemaphoreGive(mlxMutex);
+
+	frameData[MLX90640_FRAME_AUX_CTRL_REG1] = controlRegister1;
+	frameData[MLX90640_FRAME_AUX_SUBPAGE]   = statusRegister & 0x0001;
 	
-	return frameData[MLX90640_RAM_AUX_SUBPAGE];
+	return frameData[MLX90640_FRAME_AUX_SUBPAGE];
 }
 
 mlx_fb_t MLX90640_fb_get()
@@ -258,17 +279,21 @@ int MLX90640_GetCurADCresolution()
 
 int MLX90640_SetRefreshRate(uint8_t refreshRate)
 {
-    uint16_t controlRegister1;
+	xSemaphoreTake(mlxMutex, portMAX_DELAY);
+	
+   		int value = (refreshRate & 0x07) << 7;
     
-    int value = (refreshRate & 0x07) << 7;
-    
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    if (error == 0)
-    {
-        value = (controlRegister1 & 0xFC7F) | value;			// B7-B9
-        error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
-    }
+		uint16_t controlRegister1;
 
+		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		if (error == 0)
+		{
+			// success
+			value = (controlRegister1 & 0xFC7F) | value;			// B7-B9
+			error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
+		}
+
+	xSemaphoreGive(mlxMutex);
 
 	switch (refreshRate) {
 	case MLX90640_REFRESH_RATE_05HZ:
@@ -323,12 +348,16 @@ int MLX90640_GetFastRefreshRate()
 
 int MLX90640_GetRefreshRate()
 {
-    uint16_t controlRegister1;
-    
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-    if (error != 0) return error;
+	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
-    int refreshRate = (controlRegister1 & 0x0380) >> 7;
+		uint16_t controlRegister1;
+    
+		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		if (error != 0) return error;
+
+		int refreshRate = (controlRegister1 & 0x0380) >> 7;
+
+	xSemaphoreGive(mlxMutex);
     
     return refreshRate;
 }
@@ -412,7 +441,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 	                      float tr,
 	                      float *afResult)
 {
-	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
+	uint16_t subPage = frameData[MLX90640_FRAME_AUX_SUBPAGE];
 
 	float       vdd  = MLX90640_GetVdd(frameData, params);
     float       ta   = MLX90640_GetTa(frameData, params);
@@ -430,17 +459,17 @@ void MLX90640_CalculateTo(uint16_t* frameData,
     alphaCorrR[3] = alphaCorrR[2] * (1 + params->ksTo[3] * (params->ct[3] - params->ct[2]));
     
 //------------------------- Gain calculation -----------------------------------    
-    float gain = frameData[MLX90640_RAM_GAIN];
+    float gain = frameData[MLX90640_FRAME_GAIN];
     if (gain > 32767) gain = gain - 65536;
     gain = params->gainEE / gain; 
   
 //------------------------- To calculation -------------------------------------    
 	// 0x80 chess pattern or 0x00 interleaved
-	uint8_t modeFrame = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
+	uint8_t modeFrame = (frameData[MLX90640_FRAME_AUX_CTRL_REG1] & 0x1000) >> 5;
     
 	float irDataCP[2];
-	irDataCP[0] = frameData[MLX90640_RAM_CP0];
-    irDataCP[1] = frameData[MLX90640_RAM_CP1];
+	irDataCP[0] = frameData[MLX90640_FRAME_CP0];
+    irDataCP[1] = frameData[MLX90640_FRAME_CP1];
     
 	for (int i = 0; i < 2; i++)
     {
@@ -469,7 +498,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
         else				// chess
             pattern = chessPattern;          
         
-        if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
+        if (pattern == frameData[MLX90640_FRAME_AUX_SUBPAGE])
 		{
 			float irData;
 
@@ -514,23 +543,23 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 // E.g.: Motion detection, Scene change detection, Simple tracking
 void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *afResult)
 {
-	uint16_t subPage = frameData[MLX90640_RAM_AUX_SUBPAGE];
+	uint16_t subPage = frameData[MLX90640_FRAME_AUX_SUBPAGE];
 
     float        vdd = MLX90640_GetVdd(frameData, params);
     float        ta  = MLX90640_GetTa(frameData, params);
     
 //------------------------- Gain calculation -----------------------------------    
-    float gain = frameData[MLX90640_RAM_GAIN];
+    float gain = frameData[MLX90640_FRAME_GAIN];
     if (gain > 32767) gain = gain - 65536;
     gain = params->gainEE / gain; 
   
 //------------------------- Image calculation -------------------------------------    
 	// 0x80 chess pattern or 0x00 interleaved
-	uint8_t modeFrame = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x1000) >> 5;
+	uint8_t modeFrame = (frameData[MLX90640_FRAME_AUX_CTRL_REG1] & 0x1000) >> 5;
     
 	float irDataCP[2];
-	irDataCP[0] = frameData[MLX90640_RAM_CP0];	// subpage0
-    irDataCP[1] = frameData[MLX90640_RAM_CP1];	// subpage1
+	irDataCP[0] = frameData[MLX90640_FRAME_CP0];	// subpage0
+    irDataCP[1] = frameData[MLX90640_FRAME_CP1];	// subpage1
 
     for (int i = 0; i < 2; i++)
     {
@@ -562,7 +591,7 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
         else				// chess
             pattern = chessPattern; 
         
-        if (pattern == frameData[MLX90640_RAM_AUX_SUBPAGE])
+        if (pattern == frameData[MLX90640_FRAME_AUX_SUBPAGE])
         {   
 			float irData;
 
@@ -594,10 +623,10 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 // compensating for resolution differences and calibration constants
 float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 {
-    float vdd = frameData[MLX90640_RAM_VDD];
+    float vdd = frameData[MLX90640_FRAME_VDD];
     if (vdd > 32767) vdd = vdd - 65536;
 
-    int resolutionADC = (frameData[MLX90640_RAM_AUX_CTRL_REG1] & 0x0C00) >> 10;
+    int resolutionADC = (frameData[MLX90640_FRAME_AUX_CTRL_REG1] & 0x0C00) >> 10;
     
 	// The ADC resolution can vary depending on sensor settings.
 	// Compute a correction factor between the EEPROM default ADC resolution (params->resolutionEE)
@@ -622,10 +651,10 @@ float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
     float vdd = MLX90640_GetVdd(frameData, params);
     
 	// Voltage proportional to ambient temperature constant
-	float Vptat = frameData[MLX90640_RAM_PTAT];
+	float Vptat = frameData[MLX90640_FRAME_PTAT];
     if (Vptat > 32767) Vptat = Vptat - 65536;
  
-    float Vbe = frameData[MLX90640_RAM_VBE];
+    float Vbe = frameData[MLX90640_FRAME_VBE];
     if (Vbe > 32767) Vbe = Vbe - 65536;
 
 	// The combination of PTAT and Vbe cancels out nonlinear effects and supply voltage dependency
@@ -637,11 +666,94 @@ float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
     return Ta;
 }
 
+// Calculate power supply voltage from its internal ADC readings,
+// compensating for resolution differences and calibration constants
+float MLX90640_GetVddRAM()
+{
+	xSemaphoreTake(mlxMutex, portMAX_DELAY);
+
+		uint16_t vdd_ram;
+		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VDD, 1, &vdd_ram);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return 0.0f;
+		}
+
+		float vdd = vdd_ram;
+		if (vdd > 32767) vdd = vdd - 65536;
+
+		uint16_t ctrl_reg1_ram;
+		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &ctrl_reg1_ram);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return 0.0f;
+		}
+
+	xSemaphoreGive(mlxMutex);
+
+	int resolutionADC = (ctrl_reg1_ram & 0x0C00) >> 10;
+
+	// The ADC resolution can vary depending on sensor settings.
+	// Compute a correction factor between the EEPROM default ADC resolution (params->resolutionEE)
+	// and the actual runtime ADC resolution (resolutionADC)
+	float resolutionCor = pow(2, (double)mlx90640.resolutionEE) /
+						  pow(2, (double)resolutionADC);
+
+	// Convert from adc counts to voltage
+	// vdd25 is the sensor's ADC offset value at 25 C, stored during calibration.
+	// It acts as the reference point for the supply voltage calculation.
+	// Subtracting it removes the offset so voltage can be computed relative to this baseline
+	vdd = (resolutionCor * vdd - mlx90640.vdd25) / mlx90640.kVdd + 3.3;
+
+	return vdd;
+}
+
+//------------------------------------------------------------------------------
+// Calculate ambient/device temperature (die temperature)
+// Without correction, the object temperature(To) would be biased by how warm the chip is
+float MLX90640_GetTaRAM()
+{
+	float vdd = MLX90640_GetVddRAM();
+
+	xSemaphoreTake(mlxMutex, portMAX_DELAY);
+
+		// Voltage proportional to ambient temperature constant
+		uint16_t vptat_ram;
+		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_PTAT, 1, &vptat_ram);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return 0.0f;
+		}
+
+		float Vptat = vptat_ram;
+		if (Vptat > 32767) Vptat = Vptat - 65536;
+
+		uint16_t vbe_ram;
+		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VBE, 1, &vbe_ram);
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return 0.0f;
+		}
+
+	xSemaphoreGive(mlxMutex);
+
+	float Vbe = vbe_ram;
+	if (Vbe > 32767) Vbe = Vbe - 65536;
+
+	// The combination of PTAT and Vbe cancels out nonlinear effects and supply voltage dependency
+	float VptatArt = (Vptat / (Vptat * mlx90640.alphaPTAT + Vbe)) * pow(2, (double)18);
+
+	float Ta = (VptatArt / (1 + mlx90640.KvPTAT * (vdd - 3.3)) - mlx90640.vPTAT25);
+	Ta = Ta / mlx90640.KtPTAT + 25;
+
+	return Ta;
+}
+
 //------------------------------------------------------------------------------
 
 int MLX90640_GetSubPageNumber(uint16_t *frameData)
 {
-    return frameData[MLX90640_RAM_AUX_SUBPAGE];
+    return frameData[MLX90640_FRAME_AUX_SUBPAGE];
 }    
 
 //------------------------------------------------------------------------------

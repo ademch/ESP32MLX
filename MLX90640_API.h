@@ -34,21 +34,21 @@
 	#define MLX90640_REFRESH_RATE_32HZ	6
 	#define MLX90640_REFRESH_RATE_64HZ	7
 
-	#define MLX90640_RAM_VDD			810
-	#define MLX90640_RAM_PTAT			800
-	#define MLX90640_RAM_GAIN			778
-	#define MLX90640_RAM_CP0          	776
-	#define MLX90640_RAM_CP1			808
-	#define MLX90640_RAM_VBE			768
+	#define MLX90640_FRAME_VDD				810
+	#define MLX90640_FRAME_PTAT				800
+	#define MLX90640_FRAME_GAIN				778
+	#define MLX90640_FRAME_CP0				776
+	#define MLX90640_FRAME_CP1				808
+	#define MLX90640_FRAME_VBE				768
 
-	#define MLX90640_RAM_AUX_CTRL_REG1	832
-	#define MLX90640_RAM_AUX_SUBPAGE	833
+	#define MLX90640_FRAME_AUX_CTRL_REG1	832
+	#define MLX90640_FRAME_AUX_SUBPAGE		833
 
 	// addresses
-	#define MLX90640_I2C_RAM			0x0400
-	#define MLX90640_I2C_EEPROM			0x2400
-	#define MLX90640_I2C_STATUS_REG		0x8000
-	#define MLX90640_I2C_CTRL_REG1		0x800D
+	#define MLX90640_I2C_RAM				0x0400
+	#define MLX90640_I2C_EEPROM				0x2400
+	#define MLX90640_I2C_STATUS_REG			0x8000
+	#define MLX90640_I2C_CTRL_REG1			0x800D
 
     typedef struct
     {
@@ -102,8 +102,13 @@
     int MLX90640_DumpEE(uint16_t *eeData);
 	// Restore params
 	int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
-    float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params);
+    
+	float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params);
     float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params);
+
+	// functions for safe remote calling
+	float MLX90640_GetVddRAM();
+	float MLX90640_GetTaRAM();
     
 	int  MLX90640_GetFrameData(uint16_t *frameData);
 	

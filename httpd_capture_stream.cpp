@@ -197,7 +197,7 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 
 	fb = MLX90640_fb_get();
 
-		httpd_resp_set_type(req, "application/octet-stream");
+		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
 		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.bmp");
 		httpd_resp_set_hdr(req,  "Access-Control-Allow-Origin", "*");
 
@@ -237,7 +237,7 @@ esp_err_t mlx90640_offsets_handler(httpd_req_t *req)
 
 	ob = MLX90640_ob_get();
 
-		httpd_resp_set_type(req, "application/octet-stream");
+		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
 		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.txt");
 		httpd_resp_set_hdr(req,  "Access-Control-Allow-Origin", "*");
 
