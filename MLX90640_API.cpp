@@ -434,6 +434,7 @@ void MLX90640_SetEmissivity(float value)
 // params     - structure holding calibration constants after MLX90640_ExtractParameters()
 // emissivity - target surface emissivity (0.02-0.2: Shiny metal, 0.96: Matte black paint)
 // tr         - ambient temperature reflected by the object into the sensor in Celsius
+//              (in the air the sensor is 8 degrees hotter, ie. tr ~ ta-8)
 // afResult   - output array of 768 floats (32x24 pixels) in Celsius
 void MLX90640_CalculateTo(uint16_t* frameData,
 	                      const paramsMLX90640* params,
@@ -446,9 +447,11 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 	float       vdd  = MLX90640_GetVdd(frameData, params);
     float       ta   = MLX90640_GetTa(frameData, params);
 
-    float       ta4  = pow((ta + 273.15), (double)4);
-    float       tr4  = pow((tr + 273.15), (double)4);
-    float       taTr = tr4 - (tr4-ta4)/emissivity;
+    // 11.2.2.9
+	// ta_r^4 = ta^4 - (1-eps)*tr^4 / eps
+	float       ta4   = pow((ta + 273.15), (double)4);
+    float       tr4   = pow((tr + 273.15), (double)4);
+    float       ta_r4 = tr4 - (tr4-ta4)/emissivity;
 
 	ESP_LOGD("Frame data", "Subpage %d: Tdie=%3.1f, Vdd=%4.2f", subPage, ta, vdd);
     
@@ -518,10 +521,10 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 			alphaCompensated = (params->alpha[pixelNumber] - params->tgc * params->cpAlpha[subPage])*(1 + params->KsTa * (ta - 25));
             
 			float Sx;
-			Sx = pow((double)alphaCompensated, (double)3) * (irData + alphaCompensated * taTr);
+			Sx = pow((double)alphaCompensated, (double)3) * (irData + alphaCompensated * ta_r4);
             Sx = sqrt(sqrt(Sx)) * params->ksTo[1];
             
-            float fTo = sqrt(sqrt( irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + taTr )) - 273.15;
+            float fTo = sqrt(sqrt( irData/(alphaCompensated * (1 - params->ksTo[1] * 273.15) + Sx) + ta_r4 )) - 273.15;
  
 			int8_t range;
 			if      (fTo < params->ct[1]) range = 0;
@@ -529,7 +532,7 @@ void MLX90640_CalculateTo(uint16_t* frameData,
             else if (fTo < params->ct[3]) range = 2;
             else                          range = 3;
             
-            fTo = sqrt(sqrt( irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (fTo - params->ct[range]))) + taTr)) - 273.15;
+            fTo = sqrt(sqrt( irData / (alphaCompensated * alphaCorrR[range] * (1 + params->ksTo[range] * (fTo - params->ct[range]))) + ta_r4)) - 273.15;
             
             afResult[pixelNumber] = fTo;
         }
