@@ -105,6 +105,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		int j = 0;
 		while (true)
 		{
+			// send progress
 			res = httpd_resp_send_chunk(req, (const char*)&mlx90640calibration_frame, 1);
 
 			if (res != ESP_OK) {
