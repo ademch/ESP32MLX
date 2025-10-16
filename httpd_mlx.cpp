@@ -7,6 +7,7 @@
 
 extern esp_err_t parse_get(httpd_req_t *req, char **obuf);
 extern bool isStreaming;
+extern bool mlx_online;
 extern uint8_t mlx90640calibration_frame;
 
 // GET /mlx
@@ -93,6 +94,9 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		log_i("Calibrating to %f mean temperature", fMeanTemp);
 
 		if (!isStreaming)
+			return httpd_resp_send_500(req);
+
+		if (!mlx_online)
 			return httpd_resp_send_500(req);
 
 		clear_user_mlx_calibration_offsets();

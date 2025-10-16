@@ -20,6 +20,9 @@
 #include "esp_timer.h"
 #include <stdlib.h>
 #include <Arduino.h>
+#include <Wire.h>
+
+bool mlx_online = false;
 
 // device address
 uint8_t mlx_slaveAddr = 0;
@@ -30,14 +33,14 @@ SemaphoreHandle_t mlxMutex;
 // params
 paramsMLX90640 mlx90640 = {};
 
-// frame populated by MLX90640_GetFrameData
+// frame populated by GetFrameData
 uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
 
-// frame processed by MLX90640_CalculateTo
-float mlx90640_float_frame[MLX90640_pixelCOUNT];	// 32 columns x 24 rows
+// frame processed by CalculateTo
+float mlx90640_float_frame[MLX90640_pixelCOUNT]   = {0.0};	// 32 columns x 24 rows
 
 // user calibration offsets
-float mlx90640_float_offsets[MLX90640_pixelCOUNT];	// 32 columns x 24 rows
+float mlx90640_float_offsets[MLX90640_pixelCOUNT] = {0.0};	// 32 columns x 24 rows
 
 // 80% of delta between samples
 int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
@@ -64,30 +67,54 @@ int  ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640);
 int  CheckAdjacentPixels(uint16_t pix1, uint16_t pix2);
 int  CheckEEPROMvalid(uint16_t *eeData);
 
+int  DumpEE(uint16_t *eeData);
+
+int  GetFrameData(uint16_t *frameData);
+void CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
+//   Restore params
+int  ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
+
+float GetVdd(uint16_t *frameData, const paramsMLX90640 *params);
+float GetTa(uint16_t *frameData, const paramsMLX90640 *params);
+
+void  MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
+
 
 int MLX90640_Init(uint8_t _slaveAddr)
 {
 	mlx_slaveAddr = _slaveAddr;
 
+	Wire.beginTransmission(mlx_slaveAddr);
+	if (Wire.endTransmission() != 0) {
+		Serial.print("MLX90640 not detected at address ");
+		Serial.println(mlx_slaveAddr);
+		Serial.println("This will result in zero valued mlx stream");
+
+		mlx_online = false;
+		return -3;
+	}
+
+	mlx_online = true;
+
 	mlxMutex = xSemaphoreCreateMutex();
 
-	uint16_t eeMLX90640[MLX90640_eepromSIZE];
+	uint16_t eeMLX90640[MLX90640_eepromSIZE] = {0};
 
-	int status = MLX90640_DumpEE(eeMLX90640);
+	int status = DumpEE(eeMLX90640);
 	if (status != 0) return -1;
 
-	status = MLX90640_ExtractParameters(eeMLX90640, &mlx90640);
+	status = ExtractParameters(eeMLX90640, &mlx90640);
 	if (status != 0) return -2;
 
 	return 0;
 }
 
-int MLX90640_DumpEE(uint16_t *eeData)
+int DumpEE(uint16_t *eeData)
 {
-     return MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_EEPROM, MLX90640_eepromSIZE, eeData);
+    return MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_EEPROM, MLX90640_eepromSIZE, eeData);
 }
 
-int MLX90640_GetFrameData(uint16_t *frameData)
+int GetFrameData(uint16_t *frameData)
 {
 	uint16_t controlRegister1;
 	uint16_t statusRegister;
@@ -162,18 +189,22 @@ mlx_fb_t MLX90640_fb_get()
 {
 	mlx_fb_t fb = {};
 	
-	// sample twice sequentially to be sure we get 0th and 1st subpages
-	for (uint8_t x = 0; x < 2; x++)
+	if (mlx_online)
 	{
-		int status = MLX90640_GetFrameData(mlx90640_frame);
-		if (status < 0)
+		// sample twice sequentially to be sure we get 0th and 1st subpages
+		for (uint8_t x = 0; x < 2; x++)
 		{
-			log_e("GetFrame Error: %d", status);
-			return fb;	// empty fb
-		}
+			int status = GetFrameData(mlx90640_frame);
+			if (status < 0)
+			{
+				log_e("GetFrame Error: %d", status);
+				return fb;	// empty fb
+			}
 
-		MLX90640_CalculateTo(mlx90640_frame, &mlx90640, fEmissivity, TambientReflected, mlx90640_float_frame);
+			CalculateTo(mlx90640_frame, &mlx90640, fEmissivity, TambientReflected, mlx90640_float_frame);
+		}
 	}
+	// prepare fb data even if sensor is offline
 
 	//MLXframe2bmp(mlx90640_float_frame,MLX90640_pixelCOUNT, 32,24,  &fb.buf,&fb.len);
 
@@ -219,7 +250,7 @@ void MLX90640_ob_return(mlx_ob_t& ob)
 	ob.offsets = NULL;
 }
 
-int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
+int ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 {
     int error = CheckEEPROMvalid(eeData);
     
@@ -248,6 +279,8 @@ int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 int MLX90640_SetADCresolution(uint8_t resolution)
 {
+	if (!mlx_online) return -1000;
+
     int value = (resolution & 0x03) << 10;
     
 	uint16_t controlRegister1;
@@ -266,6 +299,8 @@ int MLX90640_SetADCresolution(uint8_t resolution)
 
 int MLX90640_GetCurADCresolution()
 {
+	if (!mlx_online) return -1000;
+
     uint16_t controlRegister1;
     int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
@@ -279,6 +314,8 @@ int MLX90640_GetCurADCresolution()
 
 int MLX90640_SetRefreshRate(uint8_t refreshRate)
 {
+	if (!mlx_online) return -1000;
+
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 	
    		int value = (refreshRate & 0x07) << 7;
@@ -330,6 +367,8 @@ int MLX90640_SetRefreshRate(uint8_t refreshRate)
 // fast/slow 4HZ vs 05HZ
 int MLX90640_SetFastRefreshRate(uint8_t fast)
 {
+	if (!mlx_online) return -1000;
+
 	bMLXfastRefreshRate = fast;
 
 	if (bMLXfastRefreshRate)
@@ -348,12 +387,17 @@ int MLX90640_GetFastRefreshRate()
 
 int MLX90640_GetRefreshRate()
 {
+	if (!mlx_online) return -1000;
+
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
 		uint16_t controlRegister1;
     
 		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
-		if (error != 0) return error;
+		if (error != 0) {
+			xSemaphoreGive(mlxMutex);
+			return error;
+		}
 
 		int refreshRate = (controlRegister1 & 0x0380) >> 7;
 
@@ -366,6 +410,8 @@ int MLX90640_GetRefreshRate()
 
 int MLX90640_SetInterleavedMode()
 {
+	if (!mlx_online) return -1000;
+
     uint16_t controlRegister1;
     int value;
     
@@ -385,6 +431,8 @@ int MLX90640_SetInterleavedMode()
 
 int MLX90640_SetChessMode()
 {
+	if (!mlx_online) return -1000;
+
     uint16_t controlRegister1;
     int value;
         
@@ -404,6 +452,8 @@ int MLX90640_SetChessMode()
 
 int MLX90640_GetCurMode()
 {
+	if (!mlx_online) return -1000;
+
     uint16_t controlRegister1;
     
     int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
@@ -430,13 +480,13 @@ void MLX90640_SetEmissivity(float value)
 //------------------------------------------------------------------------------
 // Calculate Object Temperature from raw data
 //
-// frameData  - raw frame from MLX90640_GetFrameData()
-// params     - structure holding calibration constants after MLX90640_ExtractParameters()
+// frameData  - raw frame from GetFrameData()
+// params     - structure holding calibration constants after ExtractParameters()
 // emissivity - target surface emissivity (0.02-0.2: Shiny metal, 0.96: Matte black paint)
 // tr         - ambient temperature reflected by the object into the sensor in Celsius
 //              (in the air the sensor is 8 degrees hotter, ie. tr ~ ta-8)
 // afResult   - output array of 768 floats (32x24 pixels) in Celsius
-void MLX90640_CalculateTo(uint16_t* frameData,
+void CalculateTo(uint16_t* frameData,
 	                      const paramsMLX90640* params,
 	                      float emissivity,
 	                      float tr,
@@ -444,8 +494,8 @@ void MLX90640_CalculateTo(uint16_t* frameData,
 {
 	uint16_t subPage = frameData[MLX90640_FRAME_AUX_SUBPAGE];
 
-	float       vdd  = MLX90640_GetVdd(frameData, params);
-    float       ta   = MLX90640_GetTa(frameData, params);
+	float       vdd  = GetVdd(frameData, params);
+    float       ta   = GetTa(frameData, params);
 
     // 11.2.2.9
 	// ta_r^4 = ta^4 - (1-eps)*tr^4 / eps
@@ -548,8 +598,8 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 {
 	uint16_t subPage = frameData[MLX90640_FRAME_AUX_SUBPAGE];
 
-    float        vdd = MLX90640_GetVdd(frameData, params);
-    float        ta  = MLX90640_GetTa(frameData, params);
+    float        vdd = GetVdd(frameData, params);
+    float        ta  = GetTa(frameData, params);
     
 //------------------------- Gain calculation -----------------------------------    
     float gain = frameData[MLX90640_FRAME_GAIN];
@@ -624,7 +674,7 @@ void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float 
 
 // Calculats power supply voltage from its internal ADC readings,
 // compensating for resolution differences and calibration constants
-float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
+float GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 {
     float vdd = frameData[MLX90640_FRAME_VDD];
     if (vdd > 32767) vdd = vdd - 65536;
@@ -649,9 +699,9 @@ float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params)
 //------------------------------------------------------------------------------
 // Calculate ambient/device temperature (die temperature)
 // Without correction, the object temperature(To) would be biased by how warm the chip is
-float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
+float GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 {
-    float vdd = MLX90640_GetVdd(frameData, params);
+    float vdd = GetVdd(frameData, params);
     
 	// Voltage proportional to ambient temperature constant
 	float Vptat = frameData[MLX90640_FRAME_PTAT];
@@ -673,6 +723,8 @@ float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 // compensating for resolution differences and calibration constants
 float MLX90640_GetVddRAM()
 {
+	if (!mlx_online) return 0.0f;
+
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
 		uint16_t vdd_ram;
@@ -716,6 +768,8 @@ float MLX90640_GetVddRAM()
 // Without correction, the object temperature(To) would be biased by how warm the chip is
 float MLX90640_GetTaRAM()
 {
+	if (!mlx_online) return 0.0f;
+
 	float vdd = MLX90640_GetVddRAM();
 
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
@@ -1240,8 +1294,8 @@ int ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640)
      int pixPosDif = pix1 - pix2;
 
      if (pixPosDif > -34 && pixPosDif < -30)  return -6;
-     if (pixPosDif >  -2 && pixPosDif <   2)    return -6;
-     if (pixPosDif >  30 && pixPosDif <  34)   return -6;
+     if (pixPosDif >  -2 && pixPosDif <   2)  return -6;
+     if (pixPosDif >  30 && pixPosDif <  34)  return -6;
      
      return 0;    
  }

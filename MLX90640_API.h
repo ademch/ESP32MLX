@@ -99,21 +99,9 @@
   
 	int MLX90640_Init(uint8_t _slaveAddr);
 
-    int MLX90640_DumpEE(uint16_t *eeData);
-	// Restore params
-	int MLX90640_ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
-    
-	float MLX90640_GetVdd(uint16_t *frameData, const paramsMLX90640 *params);
-    float MLX90640_GetTa(uint16_t *frameData, const paramsMLX90640 *params);
-
 	// functions for safe remote calling
 	float MLX90640_GetVddRAM();
 	float MLX90640_GetTaRAM();
-    
-	int  MLX90640_GetFrameData(uint16_t *frameData);
-	
-	void MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
-    void MLX90640_CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
     
 	mlx_fb_t MLX90640_fb_get();
 	void     MLX90640_fb_return(mlx_fb_t& fb);

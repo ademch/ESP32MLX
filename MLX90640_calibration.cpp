@@ -95,7 +95,7 @@ void read_user_mlx_calibration_date(char* strDate)
 
 	// if file does not exist
 	if (!fd || !fd.available()) {
-		log_e("Failed to open file %s, sending index.html from build", pathTimestampFile);
+		log_e("Failed to open file %s", pathTimestampFile);
 		snprintf(strDate, 32, "never");
 		return;
 	}

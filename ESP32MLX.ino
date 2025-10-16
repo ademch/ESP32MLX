@@ -132,13 +132,6 @@ void setup() {
 
 		const uint8_t MLX90640_address = 0x33;  // Default 7-bit unshifted address of the MLX90640
 
-		Wire.beginTransmission(MLX90640_address);
-		if (Wire.endTransmission() != 0) {
-			Serial.print("MLX90640 not detected at address ");
-			Serial.println(MLX90640_address);
-			return;
-		}
-
 		MLX90640_Init(MLX90640_address);
 		
 		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
