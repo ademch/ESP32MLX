@@ -263,31 +263,29 @@ esp_err_t mlx90640_set_offsets_handler(httpd_req_t *req)
 {
 	log_i("POST /set_offsets90640 received");
 
-	int remaining = req->content_len;
-	log_i("Receiving data, size: %d", remaining);
-
-	char* buf = (char*)ps_malloc(MLX90640_pixelCOUNT*sizeof(float));
-
-	if (remaining != sizeof(buf))
-	{
-		log_e("Error: expected length %d", sizeof(buf));
-		httpd_resp_send_500(req);
-
-		free(buf);
-		return ESP_FAIL;
-	}
-
 	char httpDate[64] = {};
 	if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 64) != ESP_OK)
 	{
 		log_e("X-Client-Date is missing in request");
 		httpd_resp_send_500(req);
 
-		free(buf);
 		return ESP_FAIL;
 	}
 	log_i("Received X-Client-Date: %s", httpDate);
 
+
+	int remaining = req->content_len;
+	log_i("Receiving data, size: %d", remaining);
+
+	if (remaining != MLX90640_pixelCOUNT*sizeof(float))
+	{
+		log_e("Error: expected length %d", MLX90640_pixelCOUNT*sizeof(float));
+		httpd_resp_send_500(req);
+
+		return ESP_FAIL;
+	}
+
+	char* buf = (char*)ps_malloc(MLX90640_pixelCOUNT * sizeof(float));
 	char* writePtr = buf;
 
 	int iRetries = 0;

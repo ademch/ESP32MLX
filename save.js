@@ -249,6 +249,8 @@ $('upload-calibration-btn').onclick = async () => {
 
             alert("Server says: " + text);
 
+            $('calibration_date').value = "A few moments ago"
+
         }
         catch (err) {
             alert("Error: " + err.message);
