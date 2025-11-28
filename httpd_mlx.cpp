@@ -7,7 +7,7 @@
 
 extern esp_err_t parse_get(httpd_req_t *req, char **obuf);
 extern bool isStreaming;
-extern bool mlx_online;
+
 extern uint8_t mlx90640calibration_frame;
 
 // GET /mlx
@@ -34,12 +34,14 @@ esp_err_t mlx_handler(httpd_req_t *req)
 
 	free(buf);
 
+	MLX90640& mlx90640 = MLX90640::getInstance();
+
 	if (!strcmp(variable, "ambReflected"))
 	{
 		float ambReflected = atof(value);
 		log_i("ambReflected: %f C", ambReflected);
 
-		MLX90640_SetAmbientReflected(ambReflected);
+		mlx90640.SetAmbientReflected(ambReflected);
 
 		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 		return httpd_resp_send(req, NULL, 0);
@@ -49,7 +51,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		float fEmissivity = atof(value);
 		log_i("emissivity: %f", fEmissivity);
 
-		MLX90640_SetEmissivity(fEmissivity);
+		mlx90640.SetEmissivity(fEmissivity);
 
 		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 		return httpd_resp_send(req, NULL, 0);
@@ -58,7 +60,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	{
 		log_i("device_voltage");
 
-		float vdd = MLX90640_GetVddRAM();
+		float vdd = mlx90640.GetVddRAM();
 
 		char str_vdd[10];
 		snprintf(str_vdd, 10, "%.2f", vdd);
@@ -70,7 +72,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	{
 		log_i("device_temperature");
 
-		float ta = MLX90640_GetTaRAM();
+		float ta = mlx90640.GetTaRAM();
 
 		char str_ta[10];
 		snprintf(str_ta, 10, "%.2f", ta);
@@ -82,8 +84,8 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	{
 		esp_err_t res;
 
-		char httpDate[128] = {};
-		if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 128) != ESP_OK) {
+		char httpDate[64] = {};
+		if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 64) != ESP_OK) {
 			log_e("X-Client-Date is missing in request");
 			httpd_resp_send_500(req);
 			return ESP_FAIL;
@@ -96,10 +98,10 @@ esp_err_t mlx_handler(httpd_req_t *req)
 		if (!isStreaming)
 			return httpd_resp_send_500(req);
 
-		if (!mlx_online)
+		if (!mlx90640.IsOnline())
 			return httpd_resp_send_500(req);
 
-		clear_user_mlx_calibration_offsets();
+		MLXcalibration::clearUserCalibrationOffsets();
 		mlx90640calibration_frame = 1;
 
 		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
@@ -136,7 +138,7 @@ esp_err_t mlx_handler(httpd_req_t *req)
 
 		// success
 
-		res = write_user_mlx_calibration_offsets(httpDate);
+		res = MLXcalibration::writeUserCalibrationOffsets(httpDate);
 		if (res != ESP_OK) {
 			// abort connection
 			int sockfd = httpd_req_to_sockfd(req);

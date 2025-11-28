@@ -155,9 +155,9 @@ $('save-data-btn').onclick = () => {
 }
 
 
-$('save-offsets-btn').onclick = async () => {
+$('toggle-calibrate-save-btn').onclick = async () => {
 
-    const response = await fetch(`${baseHost}/offsets90640`);
+    const response = await fetch(`${baseHost}/get_offsets90640`);
 
     if (!response.ok) throw new Error("HTTP error " + response.status);
 
@@ -198,4 +198,67 @@ $('save-offsets-btn').onclick = async () => {
     catch (e) {
         console.error(e);
     }
+}
+
+
+$('upload-calibration-btn').onclick = async () => {
+
+    let fileInput = $("calibration-fileInput");
+
+    // Check if any file is selected
+    if (!fileInput.files || fileInput.files.length === 0) {
+        alert("No file selected");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    if (file.size === 0) {
+        alert("File is empty");
+        return;
+    }
+
+    if ( !confirm("Are you sure you want to update calibration profile?") ) return;
+
+
+    const reader = new FileReader();
+
+    reader.onload = async function(e) {
+        const text = e.target.result;
+
+        // Parse numbers from file text
+        const numbers = text
+            .split(/[\s,]+/)         // split on spaces, commas, tabs, newlines
+            .filter(s => s.length)   // remove empty strings
+            .map(Number);            // convert to floats
+
+        // Convert floats to raw binary
+        const floatArray = new Float32Array(numbers);
+        const byteArray  = new Uint8Array(floatArray.buffer);
+
+        try {
+            const response = await fetch(`${baseHost}/set_offsets90640`, {
+                                            method: "POST",
+                                            headers: {
+                                                "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                            },
+                                            body: byteArray
+                                        });
+            if (!response.ok) throw new Error("Upload failed");
+
+            const text = await response.text();
+
+            alert("Server says: " + text);
+
+        }
+        catch (err) {
+            alert("Error: " + err.message);
+        }
+    }
+
+    reader.onerror = function(e) {
+        console.error("Error reading file:", e);
+    };
+
+    reader.readAsText(file);
+
 }

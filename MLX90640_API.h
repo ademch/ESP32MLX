@@ -19,20 +19,23 @@
 
 #include "sys/time.h"
 
-	#define MLX90640_eepromSIZE         832
-	#define MLX90640_ramSIZEframe       832	// ram bytes (768 frame + 64 params tag)
-	#define MLX90640_ramSIZEuser        834	// contains two additional bytes
-	#define MLX90640_pixelCOUNT         768
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+	#define MLX90640_eepromSIZE				832
+	#define MLX90640_ramSIZEframe			832	// ram bytes (768 frame + 64 params tag)
+	#define MLX90640_ramSIZEuser			834	// contains two additional bytes
+	#define MLX90640_pixelCOUNT				768
 
 	// Number of subpages per second
-	#define MLX90640_REFRESH_RATE_05HZ	0
-	#define MLX90640_REFRESH_RATE_1HZ	1
-	#define MLX90640_REFRESH_RATE_2HZ	2	// default
-	#define MLX90640_REFRESH_RATE_4HZ	3
-	#define MLX90640_REFRESH_RATE_8HZ	4
-	#define MLX90640_REFRESH_RATE_16HZ	5
-	#define MLX90640_REFRESH_RATE_32HZ	6
-	#define MLX90640_REFRESH_RATE_64HZ	7
+	#define MLX90640_REFRESH_RATE_05HZ		0
+	#define MLX90640_REFRESH_RATE_1HZ		1
+	#define MLX90640_REFRESH_RATE_2HZ		2	// default
+	#define MLX90640_REFRESH_RATE_4HZ		3
+	#define MLX90640_REFRESH_RATE_8HZ		4
+	#define MLX90640_REFRESH_RATE_16HZ		5
+	#define MLX90640_REFRESH_RATE_32HZ		6
+	#define MLX90640_REFRESH_RATE_64HZ		7
 
 	#define MLX90640_FRAME_VDD				810
 	#define MLX90640_FRAME_PTAT				800
@@ -78,6 +81,7 @@
         uint16_t	outlierPixels[5];  
     } paramsMLX90640;
 
+
 	typedef struct {
 		float* values;              // Pointer to the pixel data
 		float* offsets;             // Pointer to the offsets array
@@ -85,7 +89,7 @@
 		uint16_t width;             // Width of the buffer in pixels
 		uint16_t height;            // Height of the buffer in pixels
 		struct timeval timestamp;   // Timestamp since boot of the first DMA buffer of the frame
-		float TambientReflected;
+		float fTambientReflected;
 	} mlx_fb_t;
 
 	typedef struct {
@@ -97,34 +101,74 @@
 	} mlx_ob_t;
 
   
-	int MLX90640_Init(uint8_t _slaveAddr);
+	class MLX90640
+	{
+	public:
+		int MLX90640_Init(uint8_t _slaveAddr);
+		
+		static MLX90640& getInstance();
 
-	// functions for safe remote calling
-	float MLX90640_GetVddRAM();
-	float MLX90640_GetTaRAM();
-    
-	mlx_fb_t MLX90640_fb_get();
-	void     MLX90640_fb_return(mlx_fb_t& fb);
+		bool IsOnline();
 
-	mlx_ob_t MLX90640_ob_get();
-	void     MLX90640_ob_return(mlx_ob_t& ob);
+		// functions for safe remote calling
+		float GetVddRAM();
+		float GetTaRAM();
 
-	int MLX90640_GetCurADCresolution();
-	int MLX90640_SetADCresolution(uint8_t resolution);
-    
-	int MLX90640_GetRefreshRate();
-	int MLX90640_SetRefreshRate(uint8_t refreshRate);
-	
-	int MLX90640_SetFastRefreshRate(uint8_t fast);
-	int MLX90640_GetFastRefreshRate();
-    
-	int MLX90640_GetSubPageNumber(uint16_t *frameData);
-    int MLX90640_GetCurMode();
+		mlx_fb_t fb_get();
+		void     fb_return(mlx_fb_t& fb);
 
-    int MLX90640_SetInterleavedMode();
-    int MLX90640_SetChessMode();
+		mlx_ob_t ob_get();
+		void     ob_return(mlx_ob_t& ob);
 
-	void MLX90640_SetAmbientReflected(float value);
-	void MLX90640_SetEmissivity(float value);
-    
+		int GetRefreshRate();
+		int SetRefreshRate(uint8_t refreshRate);
+
+		int SetFastRefreshRate(uint8_t fast);
+		int GetFastRefreshRate();
+
+		int GetSubPageNumber(uint16_t *frameData);
+		int GetCurMode();
+
+		int SetInterleavedMode();
+		int SetChessMode();
+
+		void SetAmbientReflected(float value);
+		void SetEmissivity(float value);
+
+		float GetAmbientReflected();
+		float GetEmissivity();
+
+		// never used
+		int SetADCresolution(uint8_t resolution);
+		int GetCurADCresolution();
+
+	private:
+		// prevent direct instatiation, use singleton
+		MLX90640();
+
+		bool    bOnline;
+
+		uint8_t uiSlaveAddr;			// device address
+		
+		float   fTambientReflected;
+		float   fEmissivity;
+
+		uint8_t bMLXfastRefreshRate;
+
+		int16_t iFrame_delayMS;
+
+		// mutex for exclusive device interaction
+		SemaphoreHandle_t mlxMutex;
+
+		// delete copy constuctor
+		MLX90640(const MLX90640&) = delete;
+
+		// delete assignment operator
+		MLX90640 operator=(const MLX90640&) = delete;
+
+		int DumpEE_(uint16_t *eeData);
+		int GetFrameData_(uint16_t *frameData);
+
+	};
+
 #endif

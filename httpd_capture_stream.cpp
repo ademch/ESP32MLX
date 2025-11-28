@@ -6,8 +6,10 @@
 #include "sdkconfig.h"
 #include "board_config.h"
 #include "esp32-hal-log.h"
+#include "esp32-hal-psram.h"
 #include "esp32-hal-ledc.h"
 #include "MLX90640_API.h"
+#include "MLX90640_calibration.h"
 
 bool isStreaming = false;
 uint8_t mlx90640calibration_frame = 0;
@@ -193,9 +195,10 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 
 	log_i("/capture90640 received");
 
-	mlx_fb_t fb = {};
+	MLX90640& mlx90640 = MLX90640::getInstance();
 
-	fb = MLX90640_fb_get();
+	mlx_fb_t fb = {};
+	fb = mlx90640.fb_get();
 
 		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
 		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.bmp");
@@ -205,16 +208,11 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 		snprintf(ts, 32, "%lld.%06ld", fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 		httpd_resp_set_hdr(req, "X-Timestamp", (const char *)ts);
 
-		// Commented out to have a way to visualize uncompensated data
-		//
-		// apply user calibration offsets
-		//for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
-		//	fb.values[i] -= fb.offsets[i];
-		//}
+		MLXcalibration::applyUserCalibrationOffsets(fb);
 
 		res = httpd_resp_send(req, (const char *)fb.values, fb.nBytes);
 
-	MLX90640_fb_return(fb);
+	mlx90640.fb_return(fb);
 
 	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
 	log_d("RAW: %ubytes %ums", (uint32_t)(fb.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
@@ -222,20 +220,22 @@ esp_err_t mlx90640_capture_handler(httpd_req_t *req)
 	return res;
 }
 
-// GET /offsets90640
+// GET /get_offsets90640
 //
 // Input: req- valid request
-esp_err_t mlx90640_offsets_handler(httpd_req_t *req)
+esp_err_t mlx90640_get_offsets_handler(httpd_req_t *req)
 {
 	esp_err_t res;
 
 	[[maybe_unused]] int64_t fr_start = esp_timer_get_time();
 
-	log_i("GET /offsets90640 received");
+	log_i("GET /get_offsets90640 received");
+
+	MLX90640& mlx90640 = MLX90640::getInstance();
 
 	mlx_ob_t ob = {};
 
-	ob = MLX90640_ob_get();
+	ob = mlx90640.ob_get();
 
 		httpd_resp_set_type(req, HTTPD_TYPE_OCTET);
 		httpd_resp_set_hdr(req,  "Content-Disposition", "inline; filename=capture.txt");
@@ -247,12 +247,75 @@ esp_err_t mlx90640_offsets_handler(httpd_req_t *req)
 
 		res = httpd_resp_send(req, (const char *)ob.offsets, ob.nBytes);
 
-	MLX90640_ob_return(ob);
+	mlx90640.ob_return(ob);
 
 	[[maybe_unused]] int64_t fr_end = esp_timer_get_time();
 	log_d("RAW: %ubytes %ums", (uint32_t)(ob.nBytes), (uint32_t)((fr_end - fr_start) >> 10));
 
 	return res;
+}
+
+
+// POST /set_offsets90640
+//
+// Input: req- valid request
+esp_err_t mlx90640_set_offsets_handler(httpd_req_t *req)
+{
+	log_i("POST /set_offsets90640 received");
+
+	int remaining = req->content_len;
+	log_i("Receiving data, size: %d", remaining);
+
+	char* buf = (char*)ps_malloc(MLX90640_pixelCOUNT*sizeof(float));
+
+	if (remaining != sizeof(buf))
+	{
+		log_e("Error: expected length %d", sizeof(buf));
+		httpd_resp_send_500(req);
+
+		free(buf);
+		return ESP_FAIL;
+	}
+
+	char httpDate[64] = {};
+	if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 64) != ESP_OK)
+	{
+		log_e("X-Client-Date is missing in request");
+		httpd_resp_send_500(req);
+
+		free(buf);
+		return ESP_FAIL;
+	}
+	log_i("Received X-Client-Date: %s", httpDate);
+
+	char* writePtr = buf;
+
+	int iRetries = 0;
+	while (remaining > 0)
+	{
+		int nRead = httpd_req_recv(req, writePtr, remaining);
+		if (nRead <= 0)
+		{
+			if (nRead == HTTPD_SOCK_ERR_TIMEOUT) {
+				if (iRetries++ < 3) continue; // retry
+			}
+
+			log_e("Receive error");
+			httpd_resp_send_500(req);
+
+			free(buf);
+			return ESP_FAIL;
+		}
+
+		remaining -= nRead;
+		writePtr  += nRead;
+	}
+
+	MLXcalibration::writeUserCalibrationOffsets(httpDate, buf);
+
+	free(buf);
+
+	return httpd_resp_sendstr(req, "Upload successful");
 }
 
 
@@ -315,16 +378,17 @@ esp_err_t stream2640_handler(httpd_req_t *req)
 
 		if (res == ESP_OK)
 		{
-			char bufferHeader[256];
-			size_t hlen = snprintf(bufferHeader, 256,
-								   "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %lld.%06ld\r\n\r\n",
-								   buffer_jpg_len, _timestamp.tv_sec, _timestamp.tv_usec);
+			char* bufferHeader = (char*)ps_malloc(256);
+				size_t hlen = snprintf(bufferHeader, 256,
+									   "Content-Type: image/jpeg\r\nContent-Length: %u\r\nX-Timestamp: %lld.%06ld\r\n\r\n",
+									   buffer_jpg_len, _timestamp.tv_sec, _timestamp.tv_usec);
 
-			// Content-Type: type
-			// Content-Length: len
-			// X-Timestamp:
-			// new line
-			res = httpd_resp_send_chunk(req, bufferHeader, hlen);
+				// Content-Type: type
+				// Content-Length: len
+				// X-Timestamp:
+				// new line
+				res = httpd_resp_send_chunk(req, bufferHeader, hlen);
+			free(bufferHeader);
 		}
 
 		// Data
@@ -379,20 +443,23 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 
 	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
+	MLX90640& mlx90640 = MLX90640::getInstance();
+
 	mlx_fb_t fb = {};
 	while (true)
 	{
-		fb = MLX90640_fb_get();
+		fb = mlx90640.fb_get();
 
 			res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
 			if (res == ESP_OK)
 			{
-				char bufferHeader[236];
-				size_t hlen = snprintf(bufferHeader, 256,
-									   "Content-Type: application/octet-stream\r\nContent-Length: %u\r\nX-Timestamp: %lld.%06ld\r\n\r\n",
-									   fb.nBytes, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
+				char* bufferHeader = (char*)ps_malloc(256);
+					size_t hlen = snprintf(bufferHeader, 256,
+										   "Content-Type: application/octet-stream\r\nContent-Length: %u\r\nX-Timestamp: %lld.%06ld\r\n\r\n",
+										   fb.nBytes, fb.timestamp.tv_sec, fb.timestamp.tv_usec);
 
-				res = httpd_resp_send_chunk(req, bufferHeader, hlen);
+					res = httpd_resp_send_chunk(req, bufferHeader, hlen);
+				free(bufferHeader);
 			}
 
 			// if calibration is in progress
@@ -400,7 +467,7 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 				mlx90640calibration_frame++;
 
 				for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
-					fb.offsets[i] += fb.values[i]/100.0f - fb.TambientReflected/100.0f;
+					fb.offsets[i] += fb.values[i]/100.0f - fb.fTambientReflected/100.0f;
 				}
 
 				if (mlx90640calibration_frame > 100)
@@ -408,15 +475,12 @@ esp_err_t stream90640_handler(httpd_req_t *req)
 					mlx90640calibration_frame = 0;
 			}
 
-			// apply user calibration offsets
-			for (uint16_t i = 0; i < MLX90640_pixelCOUNT; i++) {
-				fb.values[i] -= fb.offsets[i];
-			}
+			MLXcalibration::applyUserCalibrationOffsets(fb);
 
 			if (res == ESP_OK)
 				res = httpd_resp_send_chunk(req, (const char *)fb.values, fb.nBytes);
 
-		MLX90640_fb_return(fb);
+		mlx90640.fb_return(fb);
 
 		if (res != ESP_OK) {
 			log_e("Send frame failed");

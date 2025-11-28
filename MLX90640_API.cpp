@@ -22,18 +22,11 @@
 #include <Arduino.h>
 #include <Wire.h>
 
-bool mlx_online = false;
-
-// device address
-uint8_t mlx_slaveAddr = 0;
-
-// mutex for exclusive device interaction
-SemaphoreHandle_t mlxMutex;
 
 // params
 paramsMLX90640 mlx90640 = {};
 
-// frame populated by GetFrameData
+// frame populated by GetFrameData_
 uint16_t mlx90640_frame[MLX90640_ramSIZEuser];
 
 // frame processed by CalculateTo
@@ -42,13 +35,6 @@ float mlx90640_float_frame[MLX90640_pixelCOUNT]   = {0.0};	// 32 columns x 24 ro
 // user calibration offsets
 float mlx90640_float_offsets[MLX90640_pixelCOUNT] = {0.0};	// 32 columns x 24 rows
 
-// 80% of delta between samples
-int16_t msFrame_delay = 0.8 * 1000 / 2;   // 2HZ by default
-
-float TambientReflected = 20.0f;
-float fEmissivity = 0.95f;
-
-uint8_t bMLXfastRefreshRate = 1;
 
 void ExtractVDDParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
 void ExtractPTATParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
@@ -67,40 +53,62 @@ int  ExtractDeviatingPixels(uint16_t *eeData, paramsMLX90640 *mlx90640);
 int  CheckAdjacentPixels(uint16_t pix1, uint16_t pix2);
 int  CheckEEPROMvalid(uint16_t *eeData);
 
-int  DumpEE(uint16_t *eeData);
 
-int  GetFrameData(uint16_t *frameData);
-void CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
 //   Restore params
 int  ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640);
+
+void CalculateTo(uint16_t *frameData, const paramsMLX90640 *params, float emissivity, float tr, float *result);
+void  MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
 
 float GetVdd(uint16_t *frameData, const paramsMLX90640 *params);
 float GetTa(uint16_t *frameData, const paramsMLX90640 *params);
 
-void  MLX90640_GetImage(uint16_t *frameData, const paramsMLX90640 *params, float *result);
 
 
-int MLX90640_Init(uint8_t _slaveAddr)
+MLX90640::MLX90640()
 {
-	mlx_slaveAddr = _slaveAddr;
+	bOnline				= false;
+	uiSlaveAddr			= 0;
+	
+	fTambientReflected	= 20.0f;
+	fEmissivity			= 0.95f;
 
-	Wire.beginTransmission(mlx_slaveAddr);
+	bMLXfastRefreshRate = 1;
+
+	// 80% of delta between samples
+	iFrame_delayMS		= 0.8 * 1000 / 2;   // 2HZ by default
+}
+
+
+// Static method returning the singleton
+MLX90640& MLX90640::getInstance()
+{
+	static MLX90640 instance;
+	return instance;
+}
+
+
+int MLX90640::MLX90640_Init(uint8_t _slaveAddr)
+{
+	uiSlaveAddr = _slaveAddr;
+
+	Wire.beginTransmission(uiSlaveAddr);
 	if (Wire.endTransmission() != 0) {
 		Serial.print("MLX90640 not detected at address ");
-		Serial.println(mlx_slaveAddr);
+		Serial.println(uiSlaveAddr);
 		Serial.println("This will result in zero valued mlx stream");
 
-		mlx_online = false;
+		bOnline = false;
 		return -3;
 	}
 
-	mlx_online = true;
+	bOnline = true;
 
 	mlxMutex = xSemaphoreCreateMutex();
 
 	uint16_t eeMLX90640[MLX90640_eepromSIZE] = {0};
 
-	int status = DumpEE(eeMLX90640);
+	int status = DumpEE_(eeMLX90640);
 	if (status != 0) return -1;
 
 	status = ExtractParameters(eeMLX90640, &mlx90640);
@@ -109,12 +117,19 @@ int MLX90640_Init(uint8_t _slaveAddr)
 	return 0;
 }
 
-int DumpEE(uint16_t *eeData)
+bool MLX90640::IsOnline()
 {
-    return MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_EEPROM, MLX90640_eepromSIZE, eeData);
+	return bOnline;
 }
 
-int GetFrameData(uint16_t *frameData)
+
+int MLX90640::DumpEE_(uint16_t *eeData)
+{
+    return MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_EEPROM, MLX90640_eepromSIZE, eeData);
+}
+
+
+int MLX90640::GetFrameData_(uint16_t *frameData)
 {
 	uint16_t controlRegister1;
 	uint16_t statusRegister;
@@ -129,7 +144,7 @@ int GetFrameData(uint16_t *frameData)
 	int64_t mlx_update_t2_usec = esp_timer_get_time();
 
 	int64_t msFromPrevFrame = (mlx_update_t2_usec - mlx_update_t1_usec) >> 10;		// convert to MS dividing by 1024
-	int64_t msToNextFrame = msFrame_delay - msFromPrevFrame;
+	int64_t msToNextFrame   = iFrame_delayMS - msFromPrevFrame;
 
 	// pause the task for more than 10 ms 
 	if (msToNextFrame > 10) {
@@ -143,7 +158,7 @@ int GetFrameData(uint16_t *frameData)
 		uint16_t dataReady = 0;
 		while (dataReady == 0)
 		{
-			error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
+			error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_STATUS_REG, 1, &statusRegister);
 			if (error != 0) {
 				xSemaphoreGive(mlxMutex);
 				return error;
@@ -157,21 +172,21 @@ int GetFrameData(uint16_t *frameData)
 		//  ---------------------------------------------------------------------------
 
 		// Read frame
-		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
+		error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_RAM, MLX90640_ramSIZEframe, frameData);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return error;
 		}
 
 		// Reset "New DATA available in RAM" flag
-		error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
+		error = MLX90640_I2CWrite(uiSlaveAddr, MLX90640_I2C_STATUS_REG, statusRegister & 0xFFF7);
 		if (error == -1) {
 			xSemaphoreGive(mlxMutex);
 			return error;
 		}
 
 		// Read and store controlRegister1
-		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return error;
@@ -185,23 +200,23 @@ int GetFrameData(uint16_t *frameData)
 	return frameData[MLX90640_FRAME_AUX_SUBPAGE];
 }
 
-mlx_fb_t MLX90640_fb_get()
+mlx_fb_t MLX90640::fb_get()
 {
 	mlx_fb_t fb = {};
 	
-	if (mlx_online)
+	if (bOnline)
 	{
 		// sample twice sequentially to be sure we get 0th and 1st subpages
 		for (uint8_t x = 0; x < 2; x++)
 		{
-			int status = GetFrameData(mlx90640_frame);
+			int status = GetFrameData_(mlx90640_frame);
 			if (status < 0)
 			{
 				log_e("GetFrame Error: %d", status);
 				return fb;	// empty fb
 			}
 
-			CalculateTo(mlx90640_frame, &mlx90640, fEmissivity, TambientReflected, mlx90640_float_frame);
+			CalculateTo(mlx90640_frame, &mlx90640, fEmissivity, fTambientReflected, mlx90640_float_frame);
 		}
 	}
 	// prepare fb data even if sensor is offline
@@ -217,19 +232,20 @@ mlx_fb_t MLX90640_fb_get()
 	fb.values   = mlx90640_float_frame;
 	fb.offsets  = mlx90640_float_offsets;
 	fb.nBytes   = fb.width * fb.height * sizeof(float);
-	fb.TambientReflected = TambientReflected;
+	fb.fTambientReflected = fTambientReflected;
 
 	return fb;
 }
 
-void MLX90640_fb_return(mlx_fb_t& fb)
+void MLX90640::fb_return(mlx_fb_t& fb)
 {
 	//free(fb.buf);
 	fb.values  = NULL;
 	fb.offsets = NULL;
 }
 
-mlx_ob_t MLX90640_ob_get()
+// offset buffer get
+mlx_ob_t MLX90640::ob_get()
 {
 	mlx_ob_t ob = {};
 
@@ -245,7 +261,7 @@ mlx_ob_t MLX90640_ob_get()
 	return ob;
 }
 
-void MLX90640_ob_return(mlx_ob_t& ob)
+void MLX90640::ob_return(mlx_ob_t& ob)
 {
 	ob.offsets = NULL;
 }
@@ -277,19 +293,19 @@ int ExtractParameters(uint16_t *eeData, paramsMLX90640 *mlx90640)
 
 //------------------------------------------------------------------------------
 
-int MLX90640_SetADCresolution(uint8_t resolution)
+int MLX90640::SetADCresolution(uint8_t resolution)
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
     int value = (resolution & 0x03) << 10;
     
 	uint16_t controlRegister1;
-	int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+	int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error == 0)
     {
 		// no error
         value = (controlRegister1 & 0xF3FF) | value;
-        error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
+        error = MLX90640_I2CWrite(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, value);
     }    
     
     return error;
@@ -297,12 +313,12 @@ int MLX90640_SetADCresolution(uint8_t resolution)
 
 //------------------------------------------------------------------------------
 
-int MLX90640_GetCurADCresolution()
+int MLX90640::GetCurADCresolution()
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
     uint16_t controlRegister1;
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+    int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
 
     int resolution = (controlRegister1 & 0x0C00) >> 10;
@@ -312,9 +328,9 @@ int MLX90640_GetCurADCresolution()
 
 //------------------------------------------------------------------------------
 
-int MLX90640_SetRefreshRate(uint8_t refreshRate)
+int MLX90640::SetRefreshRate(uint8_t refreshRate)
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 	
@@ -322,42 +338,42 @@ int MLX90640_SetRefreshRate(uint8_t refreshRate)
     
 		uint16_t controlRegister1;
 
-		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
 		if (error == 0)
 		{
 			// success
 			value = (controlRegister1 & 0xFC7F) | value;			// B7-B9
-			error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
+			error = MLX90640_I2CWrite(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, value);
 		}
 
 	xSemaphoreGive(mlxMutex);
 
 	switch (refreshRate) {
 	case MLX90640_REFRESH_RATE_05HZ:
-		msFrame_delay = 0.8 * 1000 / 0.5;
+		iFrame_delayMS = 0.8 * 1000 / 0.5;
 		break;
 	case MLX90640_REFRESH_RATE_1HZ:
-		msFrame_delay = 0.8 * 1000 / 1;
+		iFrame_delayMS = 0.8 * 1000 / 1;
 		break;
 	case MLX90640_REFRESH_RATE_4HZ:
-		msFrame_delay = 0.8 * 1000 / 4;
+		iFrame_delayMS = 0.8 * 1000 / 4;
 		break;
 	case MLX90640_REFRESH_RATE_8HZ:
-		msFrame_delay = 0.8 * 1000 / 8;
+		iFrame_delayMS = 0.8 * 1000 / 8;
 		break;
 	case MLX90640_REFRESH_RATE_16HZ:
-		msFrame_delay = 0.8 * 1000 / 16;
+		iFrame_delayMS = 0.8 * 1000 / 16;
 		break;
 	case MLX90640_REFRESH_RATE_32HZ:
-		msFrame_delay = 0.8 * 1000 / 32;
+		iFrame_delayMS = 0.8 * 1000 / 32;
 		break;
 	case MLX90640_REFRESH_RATE_64HZ:
-		msFrame_delay = 0.8 * 1000 / 64;
+		iFrame_delayMS = 0.8 * 1000 / 64;
 		break;
 
 	case MLX90640_REFRESH_RATE_2HZ:
 	default:
-		msFrame_delay = 0.8 * 1000 / 2;
+		iFrame_delayMS = 0.8 * 1000 / 2;
 		break;
 	}
     
@@ -365,35 +381,35 @@ int MLX90640_SetRefreshRate(uint8_t refreshRate)
 }
 
 // fast/slow 4HZ vs 05HZ
-int MLX90640_SetFastRefreshRate(uint8_t fast)
+int MLX90640::SetFastRefreshRate(uint8_t fast)
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
 	bMLXfastRefreshRate = fast;
 
 	if (bMLXfastRefreshRate)
-		return MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
+		return SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
 	else
-		return MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_05HZ);
+		return SetRefreshRate(MLX90640_REFRESH_RATE_05HZ);
 }
 
 // fast/slow 4HZ vs 05HZ
-int MLX90640_GetFastRefreshRate()
+int MLX90640::GetFastRefreshRate()
 {
 	return bMLXfastRefreshRate;
 }
 
 //------------------------------------------------------------------------------
 
-int MLX90640_GetRefreshRate()
+int MLX90640::GetRefreshRate()
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
 		uint16_t controlRegister1;
     
-		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+		int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return error;
@@ -408,20 +424,20 @@ int MLX90640_GetRefreshRate()
 
 //------------------------------------------------------------------------------
 
-int MLX90640_SetInterleavedMode()
+int MLX90640::SetInterleavedMode()
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
     uint16_t controlRegister1;
     int value;
     
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+    int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error == 0)
 	{
 		// no error
 
         value = (controlRegister1 & 0xEFFF);
-        error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
+        error = MLX90640_I2CWrite(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, value);
     }    
     
     return error;
@@ -429,20 +445,20 @@ int MLX90640_SetInterleavedMode()
 
 //------------------------------------------------------------------------------
 
-int MLX90640_SetChessMode()
+int MLX90640::SetChessMode()
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
     uint16_t controlRegister1;
     int value;
         
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+    int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error == 0)
     {
 		// no error
 
         value = (controlRegister1 | 0x1000);
-        error = MLX90640_I2CWrite(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, value);
+        error = MLX90640_I2CWrite(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, value);
     }    
     
     return error;
@@ -450,13 +466,13 @@ int MLX90640_SetChessMode()
 
 //------------------------------------------------------------------------------
 
-int MLX90640_GetCurMode()
+int MLX90640::GetCurMode()
 {
-	if (!mlx_online) return -1000;
+	if (!bOnline) return -1000;
 
     uint16_t controlRegister1;
     
-    int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
+    int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &controlRegister1);
     if (error != 0) return error;
 
     int mode = (controlRegister1 & 0x1000) >> 12;
@@ -466,21 +482,31 @@ int MLX90640_GetCurMode()
 
 
 //------------------------------------------------------------------------------
-void MLX90640_SetAmbientReflected(float value)
+void MLX90640::SetAmbientReflected(float value)
 {
-	TambientReflected = value;
+	fTambientReflected = value;
 }
 
-void MLX90640_SetEmissivity(float value)
+void MLX90640::SetEmissivity(float value)
 {
 	fEmissivity = value;
+}
+
+float MLX90640::GetAmbientReflected()
+{
+	return fTambientReflected;
+}
+
+float MLX90640::GetEmissivity()
+{
+	return fEmissivity;
 }
 
 
 //------------------------------------------------------------------------------
 // Calculate Object Temperature from raw data
 //
-// frameData  - raw frame from GetFrameData()
+// frameData  - raw frame from GetFrameData_()
 // params     - structure holding calibration constants after ExtractParameters()
 // emissivity - target surface emissivity (0.02-0.2: Shiny metal, 0.96: Matte black paint)
 // tr         - ambient temperature reflected by the object into the sensor in Celsius
@@ -721,14 +747,14 @@ float GetTa(uint16_t *frameData, const paramsMLX90640 *params)
 
 // Calculate power supply voltage from its internal ADC readings,
 // compensating for resolution differences and calibration constants
-float MLX90640_GetVddRAM()
+float MLX90640::GetVddRAM()
 {
-	if (!mlx_online) return 0.0f;
+	if (!bOnline) return 0.0f;
 
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
 		uint16_t vdd_ram;
-		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VDD, 1, &vdd_ram);
+		int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VDD, 1, &vdd_ram);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return 0.0f;
@@ -738,7 +764,7 @@ float MLX90640_GetVddRAM()
 		if (vdd > 32767) vdd = vdd - 65536;
 
 		uint16_t ctrl_reg1_ram;
-		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_CTRL_REG1, 1, &ctrl_reg1_ram);
+		error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_CTRL_REG1, 1, &ctrl_reg1_ram);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return 0.0f;
@@ -766,17 +792,17 @@ float MLX90640_GetVddRAM()
 //------------------------------------------------------------------------------
 // Calculate ambient/device temperature (die temperature)
 // Without correction, the object temperature(To) would be biased by how warm the chip is
-float MLX90640_GetTaRAM()
+float MLX90640::GetTaRAM()
 {
-	if (!mlx_online) return 0.0f;
+	if (!bOnline) return 0.0f;
 
-	float vdd = MLX90640_GetVddRAM();
+	float vdd = GetVddRAM();
 
 	xSemaphoreTake(mlxMutex, portMAX_DELAY);
 
 		// Voltage proportional to ambient temperature constant
 		uint16_t vptat_ram;
-		int error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_PTAT, 1, &vptat_ram);
+		int error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_PTAT, 1, &vptat_ram);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return 0.0f;
@@ -786,7 +812,7 @@ float MLX90640_GetTaRAM()
 		if (Vptat > 32767) Vptat = Vptat - 65536;
 
 		uint16_t vbe_ram;
-		error = MLX90640_I2CRead(mlx_slaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VBE, 1, &vbe_ram);
+		error = MLX90640_I2CRead(uiSlaveAddr, MLX90640_I2C_RAM + MLX90640_FRAME_VBE, 1, &vbe_ram);
 		if (error != 0) {
 			xSemaphoreGive(mlxMutex);
 			return 0.0f;
@@ -808,7 +834,7 @@ float MLX90640_GetTaRAM()
 
 //------------------------------------------------------------------------------
 
-int MLX90640_GetSubPageNumber(uint16_t *frameData)
+int GetSubPageNumber(uint16_t *frameData)
 {
     return frameData[MLX90640_FRAME_AUX_SUBPAGE];
 }    

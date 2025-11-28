@@ -42,31 +42,31 @@ httpd_handle_t mlxthc_httpd  = NULL;
 // GET can have query string comming after ?, eg GET /search?query=esp32&lang=en
 esp_err_t parse_get(httpd_req_t *req, char **obuf)
 {
-  char *buf = NULL;
+    char *buf = NULL;
 
-  size_t buf_len = httpd_req_get_url_query_len(req) + 1;
-  if (buf_len > 1)
-  {
-    buf = (char *)malloc(buf_len);
-    if (!buf)
+	size_t buf_len = httpd_req_get_url_query_len(req) + 1;
+	if (buf_len > 1)
 	{
-      httpd_resp_send_500(req);
-      return ESP_FAIL;
-    }
+		buf = (char *)malloc(buf_len);
+		if (!buf)
+		{
+			httpd_resp_send_500(req);
+			return ESP_FAIL;
+		}
 
-    if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK)
-	{
-      *obuf = buf;
-      return ESP_OK;
-    }
+		if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK)
+		{
+			*obuf = buf;
+			return ESP_OK;
+		}
 
-	// fail
-	free(buf);
-  }
+		// fail
+		free(buf);
+	}
   
-  httpd_resp_send_404(req);
+    httpd_resp_send_404(req);
   
-  return ESP_FAIL;
+    return ESP_FAIL;
 }
 
 static esp_err_t control_handler(httpd_req_t *req)
@@ -94,62 +94,65 @@ static esp_err_t control_handler(httpd_req_t *req)
     int val = atoi(value);
     log_i("%s = %d", variable, val);
     
-    sensor_t *s = esp_camera_sensor_get();
-    
+    sensor_t *cam = esp_camera_sensor_get();
+	MLX90640& mlx90640 = MLX90640::getInstance();
+
     int res = 0;
     if (!strcmp(variable, "framesize"))
     {
-        if (s->pixformat == PIXFORMAT_JPEG)
-            res = s->set_framesize(s, (framesize_t)val);	// resolution enum
+        if (cam->pixformat == PIXFORMAT_JPEG)
+            res = cam->set_framesize(cam, (framesize_t)val);	// resolution enum
     }
     else if (!strcmp(variable, "quality"))
-        res = s->set_quality(s, val);
+        res = cam->set_quality(cam, val);
     else if (!strcmp(variable, "contrast"))
-        res = s->set_contrast(s, val);
+        res = cam->set_contrast(cam, val);
     else if (!strcmp(variable, "brightness"))
-        res = s->set_brightness(s, val);
+        res = cam->set_brightness(cam, val);
     else if (!strcmp(variable, "saturation"))
-        res = s->set_saturation(s, val);
+        res = cam->set_saturation(cam, val);
     else if (!strcmp(variable, "gainceiling"))
-        res = s->set_gainceiling(s, (gainceiling_t)val);
+        res = cam->set_gainceiling(cam, (gainceiling_t)val);
     else if (!strcmp(variable, "colorbar"))
-        res = s->set_colorbar(s, val);
+        res = cam->set_colorbar(cam, val);
     else if (!strcmp(variable, "awb"))
-        res = s->set_whitebal(s, val);
+        res = cam->set_whitebal(cam, val);
     else if (!strcmp(variable, "agc"))
-        res = s->set_gain_ctrl(s, val);
+        res = cam->set_gain_ctrl(cam, val);
     else if (!strcmp(variable, "aec"))
-        res = s->set_exposure_ctrl(s, val);
+        res = cam->set_exposure_ctrl(cam, val);
     else if (!strcmp(variable, "hmirror"))
-        res = s->set_hmirror(s, val);
+        res = cam->set_hmirror(cam, val);
     else if (!strcmp(variable, "vflip"))
-        res = s->set_vflip(s, val);
+        res = cam->set_vflip(cam, val);
     else if (!strcmp(variable, "awb_gain"))
-        res = s->set_awb_gain(s, val);
+        res = cam->set_awb_gain(cam, val);
     else if (!strcmp(variable, "agc_gain"))
-        res = s->set_agc_gain(s, val);
+        res = cam->set_agc_gain(cam, val);
     else if (!strcmp(variable, "aec_value"))
-        res = s->set_aec_value(s, val);
+        res = cam->set_aec_value(cam, val);
     else if (!strcmp(variable, "aec2"))
-        res = s->set_aec2(s, val);
+        res = cam->set_aec2(cam, val);
     else if (!strcmp(variable, "dcw"))
-        res = s->set_dcw(s, val);
+        res = cam->set_dcw(cam, val);
     else if (!strcmp(variable, "bpc"))
-        res = s->set_bpc(s, val);
+        res = cam->set_bpc(cam, val);
     else if (!strcmp(variable, "wpc"))
-        res = s->set_wpc(s, val);
+        res = cam->set_wpc(cam, val);
     else if (!strcmp(variable, "raw_gma"))
-        res = s->set_raw_gma(s, val);
+        res = cam->set_raw_gma(cam, val);
     else if (!strcmp(variable, "lenc"))
-        res = s->set_lenc(s, val);
+        res = cam->set_lenc(cam, val);
     else if (!strcmp(variable, "special_effect"))
-        res = s->set_special_effect(s, val);
+        res = cam->set_special_effect(cam, val);
     else if (!strcmp(variable, "wb_mode"))
-        res = s->set_wb_mode(s, val);
+        res = cam->set_wb_mode(cam, val);
     else if (!strcmp(variable, "ae_level"))
-        res = s->set_ae_level(s, val);
+        res = cam->set_ae_level(cam, val);
     else if (!strcmp(variable, "mlx_fast"))
-  	    res = MLX90640_SetFastRefreshRate(val);
+  	    res = mlx90640.SetFastRefreshRate(val);
+	else if (!strcmp(variable, "mlx_observe_offset"))
+		res = MLXcalibration::setUserCalibrationOffsetsEnabled(val);
     else if (!strcmp(variable, "led_intensity"))
     {
         led_duty = val;
@@ -179,84 +182,94 @@ static int print_reg(char *p, sensor_t *s, uint16_t reg, uint32_t mask)
 
 static esp_err_t status_handler(httpd_req_t *req)
 {
-    static char json_response[1024];
+    char* json_response = (char*)ps_malloc(2048);
 
-    sensor_t *s = esp_camera_sensor_get();
-    char *p = json_response;
-    *p++ = '{';
+		sensor_t* cam      = esp_camera_sensor_get();
+		MLX90640& mlx90640 = MLX90640::getInstance();
 
-    if (s->id.PID == OV5640_PID || s->id.PID == OV3660_PID)
-    {
-		for (int reg = 0x3400; reg < 0x3406; reg += 2)
-		    p += print_reg(p, s, reg, 0xFFF);		//12 bit
+		char *p = json_response;
+		*p++ = '{';
+
+		if (cam->id.PID == OV5640_PID || cam->id.PID == OV3660_PID)
+		{
+			for (int reg = 0x3400; reg < 0x3406; reg += 2)
+				p += print_reg(p, cam, reg, 0xFFF);		//12 bit
  
-		p += print_reg(p, s, 0x3406, 0xFF);
+			p += print_reg(p, cam, 0x3406, 0xFF);
 
-		p += print_reg(p, s, 0x3500, 0xFFFF0);		//16 bit
-		p += print_reg(p, s, 0x3503, 0xFF);
-		p += print_reg(p, s, 0x350a, 0x3FF);		//10 bit
-		p += print_reg(p, s, 0x350c, 0xFFFF);		//16 bit
+			p += print_reg(p, cam, 0x3500, 0xFFFF0);	//16 bit
+			p += print_reg(p, cam, 0x3503, 0xFF);
+			p += print_reg(p, cam, 0x350a, 0x3FF);		//10 bit
+			p += print_reg(p, cam, 0x350c, 0xFFFF);		//16 bit
 
-		for (int reg = 0x5480; reg <= 0x5490; reg++)
-		    p += print_reg(p, s, reg, 0xFF);
+			for (int reg = 0x5480; reg <= 0x5490; reg++)
+				p += print_reg(p, cam, reg, 0xFF);
 
-		for (int reg = 0x5380; reg <= 0x538b; reg++)
-		    p += print_reg(p, s, reg, 0xFF);
+			for (int reg = 0x5380; reg <= 0x538b; reg++)
+				p += print_reg(p, cam, reg, 0xFF);
 
-		for (int reg = 0x5580; reg < 0x558a; reg++)
-		    p += print_reg(p, s, reg, 0xFF);
+			for (int reg = 0x5580; reg < 0x558a; reg++)
+				p += print_reg(p, cam, reg, 0xFF);
  
-			p += print_reg(p, s, 0x558a, 0x1FF);    //9 bit
-    }
-    else if (s->id.PID == OV2640_PID)
-    {
-		p += print_reg(p, s, 0xd3, 0xFF);
-		p += print_reg(p, s, 0x111, 0xFF);
-		p += print_reg(p, s, 0x132, 0xFF);
-    }
+				p += print_reg(p, cam, 0x558a, 0x1FF);  //9 bit
+		}
+		else if (cam->id.PID == OV2640_PID)
+		{
+			p += print_reg(p, cam, 0xd3, 0xFF);
+			p += print_reg(p, cam, 0x111, 0xFF);
+			p += print_reg(p, cam, 0x132, 0xFF);
+		}
 
-	char strMLXcalibDate[32];
-	read_user_mlx_calibration_date(strMLXcalibDate);
+		char strMLXcalibDate[32];
+		MLXcalibration::readUserCalibrationOffsetsDate(strMLXcalibDate);
 	
-	p += sprintf(p, "\"xclk\":%u,", s->xclk_freq_hz / 1000000);
-    p += sprintf(p, "\"pixformat\":%u,", s->pixformat);
-    p += sprintf(p, "\"framesize\":%u,", s->status.framesize);
-    p += sprintf(p, "\"quality\":%u,", s->status.quality);
-    p += sprintf(p, "\"brightness\":%d,", s->status.brightness);
-    p += sprintf(p, "\"contrast\":%d,", s->status.contrast);
-    p += sprintf(p, "\"saturation\":%d,", s->status.saturation);
-    p += sprintf(p, "\"sharpness\":%d,", s->status.sharpness);
-    p += sprintf(p, "\"special_effect\":%u,", s->status.special_effect);
-    p += sprintf(p, "\"wb_mode\":%u,", s->status.wb_mode);
-    p += sprintf(p, "\"awb\":%u,", s->status.awb);
-    p += sprintf(p, "\"awb_gain\":%u,", s->status.awb_gain);
-    p += sprintf(p, "\"aec\":%u,", s->status.aec);
-    p += sprintf(p, "\"aec2\":%u,", s->status.aec2);
-    p += sprintf(p, "\"ae_level\":%d,", s->status.ae_level);
-    p += sprintf(p, "\"aec_value\":%u,", s->status.aec_value);
-    p += sprintf(p, "\"agc\":%u,", s->status.agc);
-    p += sprintf(p, "\"agc_gain\":%u,", s->status.agc_gain);
-    p += sprintf(p, "\"gainceiling\":%u,", s->status.gainceiling);
-    p += sprintf(p, "\"bpc\":%u,", s->status.bpc);
-    p += sprintf(p, "\"wpc\":%u,", s->status.wpc);
-    p += sprintf(p, "\"raw_gma\":%u,", s->status.raw_gma);
-    p += sprintf(p, "\"lenc\":%u,", s->status.lenc);
-    p += sprintf(p, "\"hmirror\":%u,", s->status.hmirror);
-    p += sprintf(p, "\"vflip\":%u,", s->status.vflip);
-    p += sprintf(p, "\"dcw\":%u,", s->status.dcw);
-    p += sprintf(p, "\"colorbar\":%u,", s->status.colorbar);
-    p += sprintf(p, "\"led_intensity\":%u,", led_duty);
-	p += sprintf(p, "\"calibration_date\":\"%s\",", strMLXcalibDate);
-	p += sprintf(p, "\"mlx_fast\":%u", MLX90640_GetFastRefreshRate());
+		p += sprintf(p, "\"xclk\":%u,",        cam->xclk_freq_hz / 1000000);
+		p += sprintf(p, "\"pixformat\":%u,",   cam->pixformat);
+		p += sprintf(p, "\"framesize\":%u,",   cam->status.framesize);
+		p += sprintf(p, "\"quality\":%u,",     cam->status.quality);
+		p += sprintf(p, "\"brightness\":%d,",  cam->status.brightness);
+		p += sprintf(p, "\"contrast\":%d,",    cam->status.contrast);
+		p += sprintf(p, "\"saturation\":%d,",  cam->status.saturation);
+		p += sprintf(p, "\"sharpness\":%d,",   cam->status.sharpness);
+		p += sprintf(p, "\"special_effect\":%u,", cam->status.special_effect);
+		p += sprintf(p, "\"wb_mode\":%u,",     cam->status.wb_mode);
+		p += sprintf(p, "\"awb\":%u,",         cam->status.awb);
+		p += sprintf(p, "\"awb_gain\":%u,",    cam->status.awb_gain);
+		p += sprintf(p, "\"aec\":%u,",         cam->status.aec);
+		p += sprintf(p, "\"aec2\":%u,",        cam->status.aec2);
+		p += sprintf(p, "\"ae_level\":%d,",    cam->status.ae_level);
+		p += sprintf(p, "\"aec_value\":%u,",   cam->status.aec_value);
+		p += sprintf(p, "\"agc\":%u,",         cam->status.agc);
+		p += sprintf(p, "\"agc_gain\":%u,",    cam->status.agc_gain);
+		p += sprintf(p, "\"gainceiling\":%u,", cam->status.gainceiling);
+		p += sprintf(p, "\"bpc\":%u,",         cam->status.bpc);
+		p += sprintf(p, "\"wpc\":%u,",         cam->status.wpc);
+		p += sprintf(p, "\"raw_gma\":%u,",     cam->status.raw_gma);
+		p += sprintf(p, "\"lenc\":%u,",        cam->status.lenc);
+		p += sprintf(p, "\"hmirror\":%u,",     cam->status.hmirror);
+		p += sprintf(p, "\"vflip\":%u,",       cam->status.vflip);
+		p += sprintf(p, "\"dcw\":%u,",         cam->status.dcw);
+		p += sprintf(p, "\"colorbar\":%u,",    cam->status.colorbar);
+		p += sprintf(p, "\"led_intensity\":%u,", led_duty);
+		p += sprintf(p, "\"calibration_date\":\"%s\",", strMLXcalibDate);
+		p += sprintf(p, "\"mlx_fast\":%u,",        mlx90640.GetFastRefreshRate());
+		p += sprintf(p, "\"ambReflected\":%5.2f,", mlx90640.GetAmbientReflected());
+		p += sprintf(p, "\"emissivity\":%5.2f,",   mlx90640.GetEmissivity());
+		p += sprintf(p, "\"mlx_observe_offset\":%u", MLXcalibration::getUserCalibrationOffsetsEnabled());
+
+		*p++ = '}';
+		*p++ = 0;		// end of the string
     
-    *p++ = '}';
-    *p++ = 0;		// end of the string
+		httpd_resp_set_type(req, "application/json");
+		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
     
-    httpd_resp_set_type(req, "application/json");
-    httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-    
-    return httpd_resp_send(req, json_response, strlen(json_response));
+		esp_err_t res = httpd_resp_send(req, json_response, strlen(json_response));
+
+	free(json_response);
+
+	return res;
 }
+
 
 // GET /xclk
 static esp_err_t xclk_handler(httpd_req_t *req)
@@ -337,12 +350,12 @@ static esp_err_t greg_handler(httpd_req_t *req)
   char *buf = NULL;
   if (parse_get(req, &buf) != ESP_OK) return ESP_FAIL;
 
-	  if (httpd_query_key_value(buf, "reg", _reg, sizeof(_reg)) != ESP_OK ||
+	  if (httpd_query_key_value(buf, "reg",  _reg,  sizeof(_reg))  != ESP_OK ||
 		  httpd_query_key_value(buf, "mask", _mask, sizeof(_mask)) != ESP_OK)
 	  {
-		free(buf);
-		httpd_resp_send_404(req);
-		return ESP_FAIL;
+		  free(buf);
+		  httpd_resp_send_404(req);
+		  return ESP_FAIL;
 	  }
 
   free(buf);
@@ -368,8 +381,9 @@ static esp_err_t greg_handler(httpd_req_t *req)
 static int parse_get_var(char *buf, const char *key, int deflt)
 {
   char _int[16];
+
   if (httpd_query_key_value(buf, key, _int, sizeof(_int)) != ESP_OK)
-    return deflt;
+      return deflt;
 
   return atoi(_int);
 }
@@ -377,8 +391,9 @@ static int parse_get_var(char *buf, const char *key, int deflt)
 static esp_err_t pll_handler(httpd_req_t *req)
 {
   char *buf = NULL;
+
   if (parse_get(req, &buf) != ESP_OK)
-    return ESP_FAIL;
+      return ESP_FAIL;
 
   int bypass = parse_get_var(buf, "bypass", 0);
   int mul    = parse_get_var(buf, "mul", 0);
@@ -525,17 +540,30 @@ void startControlAndStreamServers()
 		#endif
 	};
 
-	httpd_uri_t offsets90640_uri = {
-		.uri = "/offsets90640",
+	httpd_uri_t get_offsets90640_uri = {
+		.uri = "/get_offsets90640",
 		.method = HTTP_GET,
-		.handler = mlx90640_offsets_handler,
+		.handler = mlx90640_get_offsets_handler,
 		.user_ctx = NULL
 		#ifdef CONFIG_HTTPD_WS_SUPPORT
 		,
 		.is_websocket = true,
 		.handle_ws_control_frames = false,
 		.supported_subprotocol = NULL
-	#endif
+		#endif
+	};
+
+	httpd_uri_t set_offsets90640_uri = {
+		.uri = "/set_offsets90640",
+		.method = HTTP_POST,
+		.handler = mlx90640_set_offsets_handler,
+		.user_ctx = NULL
+		#ifdef CONFIG_HTTPD_WS_SUPPORT
+		,
+		.is_websocket = true,
+		.handle_ws_control_frames = false,
+		.supported_subprotocol = NULL
+		#endif
 	};
 
 	httpd_uri_t ctrl_bmp_uri = {
@@ -702,7 +730,8 @@ void startControlAndStreamServers()
 		httpd_register_uri_handler(control_httpd, &ctrl_reboot_uri);
 
 		httpd_register_uri_handler(control_httpd, &capture90640_uri);
-		httpd_register_uri_handler(control_httpd, &offsets90640_uri);
+		httpd_register_uri_handler(control_httpd, &get_offsets90640_uri);
+		httpd_register_uri_handler(control_httpd, &set_offsets90640_uri);
     }
     
     config.server_port += 1;

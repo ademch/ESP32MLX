@@ -7,10 +7,10 @@ const startCalibration = async () => {
     let ambRefl = parseFloat($('ambReflected').value);
 
     const response = await fetch(`${baseHost}/mlx?var=calibrate&val=${ambRefl}`, {
-                                headers: {
-                                    "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
-                                }
-                            });
+                                    headers: {
+                                        "X-Client-Date": new Date().toString().split(' GMT')[0]  // e.g. "Wed, 20 Aug 2025 02:45:32"
+                                    }
+                                });
 
     if (!response.ok)   throw new Error("HTTP error " + response.status);
     if (!response.body) throw new Error("ReadableStream not supported");

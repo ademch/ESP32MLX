@@ -24,6 +24,7 @@ const char *ap_password = "12345678";
 void startControlAndStreamServers();
 void setupLedFlash();
 
+
 // Callback when station connects
 void onClientConnected(WiFiEvent_t event, WiFiEventInfo_t info) {
 	Serial.println(">> New client connected!");
@@ -132,9 +133,10 @@ void setup() {
 
 		const uint8_t MLX90640_address = 0x33;  // Default 7-bit unshifted address of the MLX90640
 
-		MLX90640_Init(MLX90640_address);
-		
-		MLX90640_SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
+		MLX90640& mlx90640 = MLX90640::getInstance();
+
+		mlx90640.MLX90640_Init(MLX90640_address);
+		mlx90640.SetRefreshRate(MLX90640_REFRESH_RATE_4HZ);
 
 	Serial.println("success");
 
@@ -183,7 +185,7 @@ void setup() {
 
 	Serial.println("Reading user calibration data from SPIFFS...");
 
-		read_user_mlx_calibration_offsets();
+		MLXcalibration::readUserCalibrationOffsets();
 
 	Serial.println("success");
 

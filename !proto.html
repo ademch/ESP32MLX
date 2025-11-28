@@ -39,14 +39,14 @@
                                 <div class="input-group" id="ambient-reflected-group">
                                     <label for="ambReflected">Ambient Refl. Temp., C</label>
                                     <div class="text">
-                                        <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="20.0" style="width: 55px; margin-right: 10px;">
+                                        <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="" class="default-action" style="width: 55px; margin-right: 10px;">
                                     </div>
                                     <button class="inline-button" id="ambReflectedBtn">Set</button>
                                 </div>
                                 <div class="input-group" id="emissivity-group">
                                     <label for="emissivity">Emissivity</label>
                                     <div class="text">
-                                        <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="0.95" style="width: 55px; margin-right: 10px;">
+                                        <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="" class="default-action" style="width: 55px; margin-right: 10px;">
                                     </div>
                                     <button class="inline-button" id="emissivityBtn">Set</button>
                                 </div>
@@ -80,13 +80,28 @@
                             </div>
 
                             <div class="group-grey-box">
+                                <div class="input-group" id="calibration-observe">
+                                    <label for="mlx_observe_offset">Use calibration profile</label>
+                                    <div class="switch">
+                                        <input id="mlx_observe_offset" type="checkbox" class="default-action">
+                                        <label class="slider" for="mlx_observe_offset"></label>
+                                    </div>
+                                </div>
                                 <div class="input-group" id="calibration-date-group">
-                                    <label for="calibration_date">Last calibration</label>
+                                    <label for="calibration_date">Last calibration date</label>
                                     <input type="text" id="calibration_date" value="query device" size="10" readonly class="default-action" style="background-color: #202020; border: 0px; color: #1FEFEF; font-size: 12px;">
                                 </div>
                                 <div class="input-group" id="calibration-group" style="align-items: center;">
                                     <progress id="calibration-progress" value="0" max="100">void</progress>
                                     <button class="inline-button" id="toggle-calibrate-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Calibrate</button>
+                                </div>
+                                <div class="input-group" id="calibration-save" style="align-items: center;">
+                                    Calibration profile
+                                    <button class="inline-button" id="toggle-calibrate-save-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Save</button>
+                                </div>
+                                <div>
+                                    <input type="file" id="calibration-fileInput" accept="text/plain" style="display: inline-block; max-width: 230px;">
+                                    <button id="upload-calibration-btn" style="display: inline-block;">Upload...</button>
                                 </div>
                             </div>
                         </section>
@@ -458,7 +473,7 @@
                         <section class="toggle-section">
 
                             <div class="group-grey-box">
-                                <input type="file" id="firmware-fileInput" accept="text/html" style="max-width: 200px; display: inline-block;">
+                                <input type="file" id="firmware-fileInput" accept="text/html" style="display: inline-block; max-width: 230px;">
                                 <button id="upload-firmware-btn" style="display: inline-block;">Update...</button>
                             </div>
 
@@ -483,7 +498,6 @@
                                    /*pointer-events: none; /* so clicks go to underlying elements */">
                         <button id="save-still-btn" type="button" class="button saveButton">Save image</button>
                         <button id="save-data-btn" type="button" class="button saveButton" style="top: 35px;">Save thermal field</button>
-                        <button id="save-offsets-btn" type="button" class="button saveButton" style="top: 65px;">Save offsets</button>
                     </div>
                 </figure>
 
@@ -496,6 +510,7 @@
         <div id="tooltipMax" class="tooltipMax"></div>
 
         <script src="script.js"></script>
+        <script src="firmware.js"></script>
         <script src="scriptCaptureAndStream.js"></script>
         <script src="save.js"></script>
         <script src="calibrate.js"></script>

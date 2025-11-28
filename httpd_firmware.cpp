@@ -69,10 +69,12 @@ esp_err_t index_handler(httpd_req_t *req)
 	log_i("GET / request received, sending index.html from SPIFFS");
 
 	// Stream file in chunks to client
-	char buf[512];
-	while (file.available()) {
+	char buf[256];
+	while ( file.available() )
+	{
 		size_t len = file.readBytes(buf, sizeof(buf));
-		if (httpd_resp_send_chunk(req, buf, len) != ESP_OK) {
+		if (httpd_resp_send_chunk(req, buf, len) != ESP_OK)
+		{
 			file.close();
 			return ESP_FAIL;
 		}
@@ -89,10 +91,11 @@ esp_err_t index_handler(httpd_req_t *req)
 esp_err_t uploadserver_handler(httpd_req_t *req)
 {
 
-	//- EXTRACT CLIENT DATE---------------------------------------------------
+//- EXTRACT CLIENT DATE---------------------------------------------------
 
-	char httpDate[128] = {};
-	if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 128) != ESP_OK) {
+	char httpDate[64] = {};
+	if (httpd_req_get_hdr_value_str(req, "X-Client-Date", httpDate, 64) != ESP_OK)
+	{
 		log_e("X-Client-Date is missing in request");
 		httpd_resp_send_500(req);
 		return ESP_FAIL;
@@ -130,9 +133,10 @@ esp_err_t uploadserver_handler(httpd_req_t *req)
 	int remaining = req->content_len;
 	log_i("Receiving file, size: %d", remaining);
 
-	char buf[512];
+	char buf[256];
 	int iRetries = 0;
-	while (remaining > 0) {
+	while (remaining > 0)
+	{
 		int nRead = httpd_req_recv(req, buf, sizeof(buf));
 		if (nRead <= 0)
 		{

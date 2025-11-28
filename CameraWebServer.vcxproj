@@ -163,6 +163,7 @@
     <None Include="!proto.html" />
     <None Include="calibrate.js" />
     <None Include="ESP32MLX.ino" />
+    <None Include="firmware.js" />
     <None Include="save.js" />
     <None Include="script.js" />
     <None Include="scriptCaptureAndStream.js" />
