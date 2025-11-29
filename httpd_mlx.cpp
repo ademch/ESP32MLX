@@ -34,32 +34,19 @@ esp_err_t mlx_handler(httpd_req_t *req)
 
 	free(buf);
 
+	log_i("/mlx %s = %s", variable, value);
+
 	MLX90640& mlx90640 = MLX90640::getInstance();
 
-	if (!strcmp(variable, "ambReflected"))
+	if (!strcmp(variable, "reset"))
 	{
-		float ambReflected = atof(value);
-		log_i("ambReflected: %f C", ambReflected);
-
-		mlx90640.SetAmbientReflected(ambReflected);
+		MLXcalibration::writeDefaultCalibrationOffsets();
 
 		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-		return httpd_resp_send(req, NULL, 0);
-	}
-	else if (!strcmp(variable, "emissivity"))
-	{
-		float fEmissivity = atof(value);
-		log_i("emissivity: %f", fEmissivity);
-
-		mlx90640.SetEmissivity(fEmissivity);
-
-		httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-		return httpd_resp_send(req, NULL, 0);
+		return httpd_resp_sendstr(req, "Reset to default profile successfully");
 	}
 	else if (!strcmp(variable, "device_voltage"))
 	{
-		log_i("device_voltage");
-
 		float vdd = mlx90640.GetVddRAM();
 
 		char str_vdd[10];
@@ -70,8 +57,6 @@ esp_err_t mlx_handler(httpd_req_t *req)
 	}
 	else if (!strcmp(variable, "device_temperature"))
 	{
-		log_i("device_temperature");
-
 		float ta = mlx90640.GetTaRAM();
 
 		char str_ta[10];

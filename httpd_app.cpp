@@ -92,7 +92,7 @@ static esp_err_t control_handler(httpd_req_t *req)
     free(buf);
    
     int val = atoi(value);
-    log_i("%s = %d", variable, val);
+    log_i("%s = %s", variable, value);
     
     sensor_t *cam = esp_camera_sensor_get();
 	MLX90640& mlx90640 = MLX90640::getInstance();
@@ -153,6 +153,16 @@ static esp_err_t control_handler(httpd_req_t *req)
   	    res = mlx90640.SetFastRefreshRate(val);
 	else if (!strcmp(variable, "mlx_observe_offset"))
 		res = MLXcalibration::setUserCalibrationOffsetsEnabled(val);
+	else if (!strcmp(variable, "ambReflected"))
+	{
+		float ambReflected = atof(value);
+		mlx90640.SetAmbientReflected(ambReflected);
+	}
+	else if (!strcmp(variable, "emissivity"))
+	{
+		float fEmissivity = atof(value);
+		mlx90640.SetEmissivity(fEmissivity);
+	}
     else if (!strcmp(variable, "led_intensity"))
     {
         led_duty = val;
@@ -390,30 +400,30 @@ static int parse_get_var(char *buf, const char *key, int deflt)
 
 static esp_err_t pll_handler(httpd_req_t *req)
 {
-  char *buf = NULL;
+	char *buf = NULL;
 
-  if (parse_get(req, &buf) != ESP_OK)
-      return ESP_FAIL;
+	if (parse_get(req, &buf) != ESP_OK)
+		return ESP_FAIL;
 
-  int bypass = parse_get_var(buf, "bypass", 0);
-  int mul    = parse_get_var(buf, "mul", 0);
-  int sys    = parse_get_var(buf, "sys", 0);
-  int root   = parse_get_var(buf, "root", 0);
-  int pre    = parse_get_var(buf, "pre", 0);
-  int seld5  = parse_get_var(buf, "seld5", 0);
-  int pclken = parse_get_var(buf, "pclken", 0);
-  int pclk   = parse_get_var(buf, "pclk", 0);
-  free(buf);
+	int bypass = parse_get_var(buf, "bypass", 0);
+	int mul    = parse_get_var(buf, "mul", 0);
+	int sys    = parse_get_var(buf, "sys", 0);
+	int root   = parse_get_var(buf, "root", 0);
+	int pre    = parse_get_var(buf, "pre", 0);
+	int seld5  = parse_get_var(buf, "seld5", 0);
+	int pclken = parse_get_var(buf, "pclken", 0);
+	int pclk   = parse_get_var(buf, "pclk", 0);
+	free(buf);
 
-  log_i("Set Pll: bypass: %d, mul: %d, sys: %d, root: %d, pre: %d, seld5: %d, pclken: %d, pclk: %d", bypass, mul, sys, root, pre, seld5, pclken, pclk);
+	log_i("Set Pll: bypass: %d, mul: %d, sys: %d, root: %d, pre: %d, seld5: %d, pclken: %d, pclk: %d", bypass, mul, sys, root, pre, seld5, pclken, pclk);
   
-  sensor_t *s = esp_camera_sensor_get();
-  int res = s->set_pll(s, bypass, mul, sys, root, pre, seld5, pclken, pclk);
-  if (res) return httpd_resp_send_500(req);
+	sensor_t *s = esp_camera_sensor_get();
+	int res = s->set_pll(s, bypass, mul, sys, root, pre, seld5, pclken, pclk);
+	if (res) return httpd_resp_send_500(req);
 
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+	httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
-  return httpd_resp_send(req, NULL, 0);
+	return httpd_resp_send(req, NULL, 0);
 }
 
 

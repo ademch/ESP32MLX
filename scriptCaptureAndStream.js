@@ -6,10 +6,15 @@ function ironbow(value, minVal, maxVal)
 {
     let t;
     
-    if (maxVal - minVal > 1)
+    // >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    // The block makes sure that too small dynamic range does not become mapped over
+    // the whole ironbow colormap causing a lot of contrasting pixels around the image
+
+    const minRange = 10.0;
+    if (maxVal - minVal > minRange)
         t = (value - minVal) / (maxVal - minVal);
     else
-        t = (value - minVal);
+        t = (value - minVal) / minRange;
 
     let r = 0, g = 0, b = 0;
 
@@ -120,7 +125,7 @@ function drawBMPBase64(frameData, width, height, elId)
 
     frameMinTemp = fMin;
     frameMaxTemp = fMax;
-
+    
     let i = 0;
     for (let y=0; y < height; y++)
     {
@@ -140,7 +145,8 @@ function drawBMPBase64(frameData, width, height, elId)
         }
     }
 
-    function uint8ToBase64(uint8) {
+    function uint8ToBase64(uint8)
+    {
         let binary = "";
         for (let i=0; i < uint8.length; i++) {
             binary += String.fromCharCode(uint8[i]);

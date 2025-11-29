@@ -148,7 +148,7 @@ const updateGUIvalue = (el, value, updateRemote) => {
 }
 
 
-function updateDeviceParam (el) {
+function updateDeviceParam(el) {
 
     let value;
 
@@ -156,6 +156,9 @@ function updateDeviceParam (el) {
     {
         case 'checkbox':
             value = el.checked ? 1 : 0;
+            break
+        case 'number':
+            value = parseFloat(el.value);
             break
         case 'range':
         case 'select-one':
@@ -218,22 +221,6 @@ document.addEventListener('DOMContentLoaded', function (event)
 
         fetchUrl(`${baseHost}/xclk?xclk=${xclk}`,
                  function(code, txt) { if (code != 200) { alert('Error['+code+']: '+txt); }  }
-                );
-    }
-
-    $('ambReflectedBtn').onclick = () => {
-        let ambRefl = parseFloat($('ambReflected').value);
-
-        fetchUrl(`${baseHost}/mlx?var=ambReflected&val=${ambRefl}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
-                );
-    }
-
-    $('emissivityBtn').onclick = () => {
-        let emiss = parseFloat($('emissivity').value);
-
-        fetchUrl(`${baseHost}/mlx?var=emissivity&val=${emiss}`,
-                 function(code, txt) { if (code != 200) { alert('Error['+code+']: ' + txt); }  }
                 );
     }
 

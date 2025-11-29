@@ -41,14 +41,12 @@
                                     <div class="text">
                                         <input id="ambReflected" type="number" min="-100" max="300" step="0.1" value="" class="default-action" style="width: 55px; margin-right: 10px;">
                                     </div>
-                                    <button class="inline-button" id="ambReflectedBtn">Set</button>
                                 </div>
                                 <div class="input-group" id="emissivity-group">
                                     <label for="emissivity">Emissivity</label>
                                     <div class="text">
                                         <input id="emissivity" type="number" min="0" max="1.0" step="0.01" value="" class="default-action" style="width: 55px; margin-right: 10px;">
                                     </div>
-                                    <button class="inline-button" id="emissivityBtn">Set</button>
                                 </div>
                             </div>
 
@@ -78,7 +76,13 @@
                                     <button class="inline-button" id="mlxDeviceVBtn" style="background: #00AA00;">Get</button>
                                 </div>
                             </div>
+                        </section>
 
+                        <hr style="width:100%">
+                        <label for="nav-toggle-mlx-calibration" class="toggle-section-label">&#9776;&nbsp;&nbsp;mlx90640 calibration</label>
+                        <input type="checkbox" id="nav-toggle-mlx-calibration" class="hidden toggle-section-button" checked="checked">
+
+                        <section class="toggle-section">
                             <div class="group-grey-box">
                                 <div class="input-group" id="calibration-observe">
                                     <label for="mlx_observe_offset">Use calibration profile</label>
@@ -95,9 +99,15 @@
                                     <progress id="calibration-progress" value="0" max="100">void</progress>
                                     <button class="inline-button" id="toggle-calibrate-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Calibrate</button>
                                 </div>
+                            </div>
+                            <div class="group-grey-box">
                                 <div class="input-group" id="calibration-save" style="align-items: center;">
                                     Calibration profile
                                     <button class="inline-button" id="toggle-calibrate-save-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Save</button>
+                                </div>
+                                <div class="input-group" id="calibration-load-default" style="align-items: center;">
+                                    Load default
+                                    <button class="inline-button" id="toggle-calibrate-default-btn" style="display: inline-block; font-size: 14px; background: #00AA00; margin-left: auto; margin-right: 5px;">Reset</button>
                                 </div>
                                 <div>
                                     <input type="file" id="calibration-fileInput" accept="text/plain" style="display: inline-block; max-width: 230px;">

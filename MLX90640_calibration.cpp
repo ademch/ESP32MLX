@@ -59,6 +59,13 @@ namespace MLXcalibration
 		return 0;
 	}
 
+	int writeDefaultCalibrationOffsets()
+	{
+		memcpy(mlx90640_float_offsets, calibration_offsets_default, MLX90640_pixelCOUNT * sizeof(float));
+
+		return writeUserCalibrationOffsets(calibration_offsets_default_date);
+	}
+
 
 	int writeUserCalibrationOffsets(const char* httpDate, const char*  buf)
 	{
